@@ -33,7 +33,7 @@ RUN eval "$(dpkg-buildflags --export=sh)" && \
 # when cross compiling the target version of strip is required
 RUN test "$TARGETARCH" = "arm64" && \
     apt-get install -y binutils-aarch64-linux-gnu && \
-    find /tmp/install -type f -executable -exec aarch64-linux-gnu-strip {} \;;
+    find /tmp/install -type f -executable -exec aarch64-linux-gnu-strip {} \; || true
 
 ARG erlang_iteration=1
 ARG TARGETARCH
