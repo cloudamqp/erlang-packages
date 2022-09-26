@@ -9,9 +9,10 @@ RUN apt-get update && \
 ARG erlang_version=25.1
 RUN curl -L "https://github.com/erlang/otp/releases/download/OTP-${erlang_version}/otp_src_${erlang_version}.tar.gz" | tar zx --strip-components=1
 RUN eval "$(dpkg-buildflags --export=sh)" && ./configure --enable-bootstrap-only && make
-
+ARG BUILDARCH
+ARG TARGETARCH
 RUN eval "$(dpkg-buildflags --export=sh)" && \
-    ./configure --host=$BUILDPLATFORM --build=$TARGETPLATFORM \
+    ./configure --host=$BUILDARCH-unknown-linux-gnu --build=$TARGETARCH-unknown-linux-gnu \
                 --prefix=/usr \
                 --enable-jit \
                 --enable-dirty-schedulers \
