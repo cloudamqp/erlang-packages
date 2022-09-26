@@ -30,6 +30,10 @@ RUN eval "$(dpkg-buildflags --export=sh)" && \
     make install DESTDIR=/tmp/install && \
     find /tmp/install -type d -name examples | xargs rm -r && \
     find /tmp/install -type f -executable -exec strip {} \;;
+# when cross compiling the target version of strip is required
+RUN test "$TARGETARCH" = "arm64" && \
+    apt-get install -y binutils-aarch64-linux-gnu && \
+    find /tmp/install -type f -executable -exec aarch64-linux-gnu-strip {} \;;
 
 ARG erlang_iteration=1
 ARG TARGETARCH
