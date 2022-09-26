@@ -1,5 +1,3 @@
-ARG BUILDPLATFORM
-ARG TARGETPLATFORM
 ARG image=debian:11
 FROM --platform=$BUILDPLATFORM ${image} AS builder
 WORKDIR /tmp/erlang
