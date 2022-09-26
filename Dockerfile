@@ -1,20 +1,24 @@
+ARG BUILDPLATFORM
+ARG TARGETPLATFORM
 ARG image=debian:11
 FROM --platform=$BUILDPLATFORM ${image} AS builder
 WORKDIR /tmp/erlang
-RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive \
-    apt-get install -y curl build-essential pkg-config libssl-dev ncurses-dev libsctp-dev ruby binutils && \
+ARG BUILDARCH
+ARG TARGETARCH
+ARG DEBIAN_FRONTEND=noninteractive
+RUN dpkg --add-architecture $TARGETARCH && \
+    apt-get update && \
+    apt-get install -y curl build-essential pkg-config ruby binutils \
+                       libssl-dev:$TARGETARCH ncurses-dev:$TARGETARCH libsctp-dev:$TARGETARCH && \
     gem install --no-document public_suffix -v 4.0.7 && \
     gem install --no-document fpm
 ARG erlang_version=25.1
 RUN curl -L "https://github.com/erlang/otp/releases/download/OTP-${erlang_version}/otp_src_${erlang_version}.tar.gz" | tar zx --strip-components=1
 RUN eval "$(dpkg-buildflags --export=sh)" && ./configure --enable-bootstrap-only && make
-ARG BUILDARCH
-ARG TARGETARCH
+RUN test "$TARGETARCH" = "arm64" && apt-get install -y gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu || true
 RUN eval "$(dpkg-buildflags --export=sh)" && \
-    ./configure --host=$TARGETARCH-unknown-linux-gnu --build=$BUILDARCH-unknown-linux-gnu \
+    ./configure $([ "$TARGETARCH" = "arm64" ] && echo "--host=aarch64-linux-gnu --build=$BUILDARCH-linux-gnu --disable-jit erl_xcomp_sysroot=/") \
                 --prefix=/usr \
-                $([ "$TARGETARCH" = "amd64" ] && echo "--enable-jit" || echo "--disable-jit") \
                 --enable-dirty-schedulers \
                 --enable-dynamic-ssl-lib \
                 --enable-kernel-poll \
@@ -29,14 +33,10 @@ RUN eval "$(dpkg-buildflags --export=sh)" && \
     make -j$(nproc) && \
     make install DESTDIR=/tmp/install && \
     find /tmp/install -type d -name examples | xargs rm -r && \
-    find /tmp/install -type f -executable -exec strip {} \;;
+    find /tmp/install -type f -executable -exec $([ "$TARGETARCH" = "arm64" ] && echo "aarch64-linux-gnu-")strip {} \;;
 # when cross compiling the target version of strip is required
-RUN test "$TARGETARCH" = "arm64" && \
-    apt-get install -y binutils-aarch64-linux-gnu && \
-    find /tmp/install -type f -executable -exec aarch64-linux-gnu-strip {} \; || true
 
 ARG erlang_iteration=1
-ARG TARGETARCH
 RUN . /etc/os-release && \
     fpm -s dir -t deb \
     --chdir /tmp/install \
@@ -59,7 +59,7 @@ RUN . /etc/os-release && \
 #RUN apt-get install -y lintian
 #RUN lintian *.deb
 
-FROM ${image} as tester
+FROM --platform=$TARGETPLATFORM ${image} as tester
 COPY --from=builder /tmp/erlang/*.deb .
 RUN apt-get update && apt-get install -y wget
 RUN wget --content-disposition "https://packagecloud.io/rabbitmq/rabbitmq-server/packages/debian/bullseye/rabbitmq-server_3.11.0-1_all.deb/download.deb?distro_version_id=207"
