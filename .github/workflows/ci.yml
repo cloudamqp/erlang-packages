@@ -19,21 +19,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - base_image: ubuntu
+          - image: ubuntu
             version: 22.04
-            codename: jammy
-          - base_image: ubuntu
+          - image: ubuntu
             version: 20.04
-            codename: focal
-          - base_image: ubuntu
+          - image: ubuntu
             version: 18.04
-            codename: bionic
-          - base_image: debian
+          - image: debian
             version: 11
-            codename: bullseye
-          - base_image: debian
+          - image: debian
             version: 10
-            codename: buster
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -49,18 +44,18 @@ jobs:
           platforms: linux/amd64,linux/arm64
           build-args: |
             erlang_version=${{ env.erlang_version }}
-            image=${{ matrix.base_image }}:${{ matrix.version }}
+            image=${{ matrix.image }}:${{ matrix.version }}
             pkg_revision=${{ github.run_number }}
           outputs: pkgs
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: erlang-${{ matrix.base_image }}-${{ matrix.version }}-pkgs
+          name: erlang-${{ matrix.image }}-${{ matrix.version }}-pkgs
           path: pkgs
       - name: Upload to Packagecloud
         run: |
           set -euxo pipefail
           curl -fsSO -u "${{ secrets.packagecloud_token }}:" https://packagecloud.io/api/v1/distributions.json
-          DIST_ID=$(jq ".deb[] | select(.index_name == \"${{ matrix.base_image }}\").versions[] | select(.index_name == \"${{ matrix.codename }}\").id" distributions.json)
+          DIST_ID=$(jq ".deb[] | select(.index_name == \"${{ matrix.image }}\").versions[] | select(.version_number == \"${{ matrix.version }}\").id" distributions.json)
           find pkgs -name "*.deb" | xargs -I{} curl -fsSu "${{ secrets.packagecloud_token }}:" -F "package[distro_version_id]=$DIST_ID" -F "package[package_file]=@{}" -XPOST https://packagecloud.io/api/v1/repos/cloudamqp/erlang/packages.json
         if: ${{ github.ref == 'refs/heads/main' }}
