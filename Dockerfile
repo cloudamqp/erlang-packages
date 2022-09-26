@@ -18,6 +18,9 @@ RUN eval "$(dpkg-buildflags --export=sh)" && \
                 --disable-builtin-zlib \
                 --disable-saved-compile-time \
                 --without-wx \
+                --without-megaco \
+                --without-odbc \
+                --without-java \
                 --with-ssl && \
     make -j$(nproc) && \
     make DESTDIR=/tmp/install install && \
