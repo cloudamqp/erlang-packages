@@ -14,7 +14,7 @@ ARG TARGETARCH
 RUN eval "$(dpkg-buildflags --export=sh)" && \
     ./configure --host=$TARGETARCH-unknown-linux-gnu --build=$BUILDARCH-unknown-linux-gnu \
                 --prefix=/usr \
-                --enable-jit \
+                $([ "$TARGETARCH" = "amd64" ] && echo "--enable-jit" || echo "--disable-jit") \
                 --enable-dirty-schedulers \
                 --enable-dynamic-ssl-lib \
                 --enable-kernel-poll \
