@@ -5,6 +5,12 @@ ARG BUILDARCH
 ARG TARGETARCH
 ARG DEBIAN_FRONTEND=noninteractive
 RUN dpkg --add-architecture $TARGETARCH && \
+    . /etc/os-release && \
+    if [ "$ID" = ubuntu ]; then \
+        sed -i "s/^deb /deb [arch=$BUILDARCH] /" /etc/apt/sources.list; \
+        echo "deb [arch=arm64] http://ports.ubuntu.com/ $VERSION_CODENAME main" >> /etc/apt/sources.list; \
+        echo "deb [arch=arm64] http://ports.ubuntu.com/ $VERSION_CODENAME-updates main" >> /etc/apt/sources.list; \
+    fi && \
     apt-get update && \
     apt-get install -y curl build-essential pkg-config ruby binutils \
                        libssl-dev:$TARGETARCH ncurses-dev:$TARGETARCH libsctp-dev:$TARGETARCH && \
@@ -13,9 +19,9 @@ RUN dpkg --add-architecture $TARGETARCH && \
 ARG erlang_version=25.1
 RUN curl -L "https://github.com/erlang/otp/releases/download/OTP-${erlang_version}/otp_src_${erlang_version}.tar.gz" | tar zx --strip-components=1
 RUN eval "$(dpkg-buildflags --export=sh)" && ./configure --enable-bootstrap-only && make
-RUN test "$TARGETARCH" = "arm64" && apt-get install -y gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu || true
+RUN test "$TARGETARCH" = arm64 && apt-get install -y gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu || true
 RUN eval "$(dpkg-buildflags --export=sh)" && \
-    ./configure $([ "$TARGETARCH" = "arm64" ] && echo "--host=aarch64-linux-gnu --build=$BUILDARCH-linux-gnu --disable-jit erl_xcomp_sysroot=/") \
+    ./configure $([ "$TARGETARCH" = arm64 ] && echo "--host=aarch64-linux-gnu --build=$BUILDARCH-linux-gnu --disable-jit erl_xcomp_sysroot=/" || echo "--enable-jit") \
                 --prefix=/usr \
                 --enable-dirty-schedulers \
                 --enable-dynamic-ssl-lib \
@@ -31,7 +37,7 @@ RUN eval "$(dpkg-buildflags --export=sh)" && \
     make -j$(nproc) && \
     make install DESTDIR=/tmp/install && \
     find /tmp/install -type d -name examples | xargs rm -r && \
-    find /tmp/install -type f -executable -exec $([ "$TARGETARCH" = "arm64" ] && echo "aarch64-linux-gnu-")strip {} \;;
+    find /tmp/install -type f -executable -exec $([ "$TARGETARCH" = arm64 ] && echo "aarch64-linux-gnu-")strip {} \;;
 # when cross compiling the target version of strip is required
 
 ARG erlang_iteration=1
