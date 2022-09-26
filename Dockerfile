@@ -47,9 +47,9 @@ RUN . /etc/os-release && \
     --description "Concurrent, real-time, distributed functional language" \
     --url "https://erlang.org" \
     --license "Apache 2.0" \
-    --depends "procps,libsctp1" \
-    --depends "$(find /tmp/install -type f -executable | xargs ldd 2>/dev/null | awk '/=>/ {print $3}' | xargs dpkg -S | awk -F: '{print $1}' | sort -u | paste -sd,)" \
-    $(for pkg in erlang-base-hipe erlang-base erlang-dev erlang-appmon erlang-asn1 erlang-common-test erlang-corba erlang-crypto erlang-debugger erlang-dialyzer erlang-docbuilder erlang-edoc erlang-erl-docgen erlang-et erlang-eunit erlang-gs erlang-ic erlang-inets erlang-inviso erlang-megaco erlang-mnesia erlang-observer erlang-odbc erlang-os-mon erlang-parsetools erlang-percept erlang-pman erlang-public-key erlang-reltool erlang-runtime-tools erlang-snmp erlang-ssh erlang-ssl erlang-syntax-tools erlang-test-server erlang-toolbar erlang-tools erlang-tv erlang-typer erlang-webtool erlang-wx erlang-xmerl; do echo "--conflicts $pkg --replaces $pkg --provides $pkg"; done) \
+    --depends "procps, libc6, libncurses5, libgcc1, libstdc++6, libsctp1" \
+    --depends "$(apt-cache depends libssl-dev | awk '/Depends:/ {print $2}')" \
+    $(for pkg in erlang-base-hipe erlang-base erlang-dev erlang-appmon erlang-asn1 erlang-common-test erlang-corba erlang-crypto erlang-debugger erlang-dialyzer erlang-docbuilder erlang-edoc erlang-erl-docgen erlang-et erlang-eunit erlang-gs erlang-ic erlang-inets erlang-inviso erlang-megaco erlang-mnesia erlang-observer erlang-odbc erlang-os-mon erlang-parsetools erlang-percept erlang-pman erlang-public-key erlang-reltool erlang-runtime-tools erlang-snmp erlang-ssh erlang-ssl erlang-syntax-tools erlang-test-server erlang-toolbar erlang-tools erlang-tv erlang-typer erlang-webtool erlang-xmerl; do echo "--conflicts $pkg --replaces $pkg --provides $pkg"; done) \
     .
 #RUN dpkg --info *.deb
 #RUN apt-get install -y lintian
