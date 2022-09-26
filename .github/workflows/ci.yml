@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - README.md
+
+env:
+  erlang_version: 25.1
+
+jobs:
+  debian:
+    name: Debian
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - base_image: ubuntu
+            version: 22.04
+            codename: jammy
+          - base_image: ubuntu
+            version: 20.04
+            codename: focal
+          - base_image: ubuntu
+            version: 18.04
+            codename: bionic
+          - base_image: debian
+            version: 11
+            codename: bullseye
+          - base_image: debian
+            version: 10
+            codename: buster
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Export packages
+        uses: docker/build-push-action@v3
+        with:
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            erlang_version=${{ env.erlang_version }}
+            image=${{ matrix.base_image }}:${{ matrix.version }}
+            pkg_revision=${{ github.run_number }}
+          outputs: pkgs
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: erlang-${{ matrix.base_image }}-${{ matrix.version }}-pkgs
+          path: pkgs
+      - name: Upload to Packagecloud
+        run: |
+          set -euxo pipefail
+          curl -fsSO -u "${{ secrets.packagecloud_token }}:" https://packagecloud.io/api/v1/distributions.json
+          DIST_ID=$(jq ".deb[] | select(.index_name == \"${{ matrix.base_image }}\").versions[] | select(.index_name == \"${{ matrix.codename }}\").id" distributions.json)
+          find pkgs -name "*.deb" | xargs -I{} curl -fsSu "${{ secrets.packagecloud_token }}:" -F "package[distro_version_id]=$DIST_ID" -F "package[package_file]=@{}" -XPOST https://packagecloud.io/api/v1/repos/cloudamqp/erlang/packages.json
+        if: ${{ github.ref == 'refs/heads/main' }}
