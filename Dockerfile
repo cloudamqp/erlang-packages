@@ -1,7 +1,10 @@
 ARG image=debian:11
 FROM ${image} AS builder
 WORKDIR /tmp/erlang
-RUN apt-get update && apt-get install -y curl build-essential pkg-config libssl-dev ncurses-dev libsctp-dev ruby binutils && gem install --no-document fpm
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive \
+    apt-get install -y curl build-essential pkg-config libssl-dev ncurses-dev libsctp-dev ruby binutils && \
+    gem install --no-document fpm
 ARG erlang_version=25.1
 RUN curl -L "https://github.com/erlang/otp/releases/download/OTP-${erlang_version}/otp_src_${erlang_version}.tar.gz" | tar zx --strip-components=1
 RUN eval "$(dpkg-buildflags --export=sh)" && \
