@@ -1,5 +1,5 @@
 ARG image=debian:11
-FROM ${image} AS builder
+FROM --platform=$BUILDPLATFORM ${image} AS builder
 WORKDIR /tmp/erlang
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive \
@@ -8,8 +8,11 @@ RUN apt-get update && \
     gem install --no-document fpm
 ARG erlang_version=25.1
 RUN curl -L "https://github.com/erlang/otp/releases/download/OTP-${erlang_version}/otp_src_${erlang_version}.tar.gz" | tar zx --strip-components=1
+RUN eval "$(dpkg-buildflags --export=sh)" && ./configure --enable-bootstrap-only && make
+
 RUN eval "$(dpkg-buildflags --export=sh)" && \
-    ./configure --prefix=/usr \
+    ./configure --host=$BUILDPLATFORM --build=$TARGETPLATFORM \
+                --prefix=/usr \
                 --enable-jit \
                 --enable-dirty-schedulers \
                 --enable-dynamic-ssl-lib \
@@ -23,7 +26,7 @@ RUN eval "$(dpkg-buildflags --export=sh)" && \
                 --without-java \
                 --with-ssl && \
     make -j$(nproc) && \
-    make DESTDIR=/tmp/install install && \
+    make install DESTDIR=/tmp/install && \
     find /tmp/install -type d -name examples | xargs rm -r && \
     find /tmp/install -type f -executable -exec strip {} \;;
 
