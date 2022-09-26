@@ -18,7 +18,7 @@ RUN dpkg --add-architecture $TARGETARCH && \
     gem install --no-document fpm
 ARG erlang_version=25.1
 RUN curl -L "https://github.com/erlang/otp/releases/download/OTP-${erlang_version}/otp_src_${erlang_version}.tar.gz" | tar zx --strip-components=1
-RUN eval "$(dpkg-buildflags --export=sh)" && ./configure --enable-bootstrap-only && make
+RUN eval "$(dpkg-buildflags --export=sh)" && ./configure --enable-bootstrap-only && make -j$(nproc)
 RUN test "$TARGETARCH" = arm64 && apt-get install -y gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu || true
 RUN eval "$(dpkg-buildflags --export=sh)" && \
     ./configure $([ "$TARGETARCH" = arm64 ] && echo "--host=aarch64-linux-gnu --build=$BUILDARCH-linux-gnu --disable-jit erl_xcomp_sysroot=/" || echo "--enable-jit") \
