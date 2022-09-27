@@ -12,27 +12,36 @@ RUN dpkg --add-architecture $TARGETARCH && \
         echo "deb [arch=arm64] http://ports.ubuntu.com/ $VERSION_CODENAME-updates main" >> /etc/apt/sources.list; \
     fi && \
     apt-get update && \
-    apt-get install -y curl build-essential pkg-config ruby binutils \
-                       libssl-dev:$TARGETARCH libtinfo-dev:$TARGETARCH libsctp-dev:$TARGETARCH && \
+    apt-get install -y curl build-essential pkg-config ruby binutils autoconf libwxbase3.0-dev \
+                       libssl-dev:$TARGETARCH libtinfo-dev:$TARGETARCH && \
     gem install --no-document public_suffix -v 4.0.7 && \
     gem install --no-document fpm
 ARG erlang_version=25.1
-RUN curl -L "https://github.com/erlang/otp/releases/download/OTP-${erlang_version}/otp_src_${erlang_version}.tar.gz" | tar zx --strip-components=1
-RUN eval "$(dpkg-buildflags --export=sh)" && ./configure --enable-bootstrap-only && make -j$(nproc)
-RUN test "$TARGETARCH" = arm64 && apt-get install -y gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu || true
+RUN curl -fL https://api.github.com/repos/erlang/otp/tarball/refs/tags/OTP-${erlang_version} | tar zx --strip-components=1
+RUN ./otp_build autoconf
+RUN test "$TARGETARCH" = arm64 && \
+    apt-get install -y gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu && \
+    eval "$(dpkg-buildflags --export=sh)" && \
+    ./configure --enable-bootstrap-only && make -j$(nproc) || true
 RUN eval "$(dpkg-buildflags --export=sh)" && \
-    ./configure $([ "$TARGETARCH" = arm64 ] && echo "--host=aarch64-linux-gnu --build=$BUILDARCH-linux-gnu --disable-jit erl_xcomp_sysroot=/" || echo "--enable-jit") \
+    CONF_FLAGS=$([ "$TARGETARCH" = arm64 ] && \
+                 echo "--host=aarch64-linux-gnu --build=$BUILDARCH-linux-gnu --disable-jit erl_xcomp_sysroot=/" || \
+                 echo "--enable-jit") && \
+    ./configure $CONF_FLAGS \
                 --prefix=/usr \
                 --enable-dirty-schedulers \
                 --enable-dynamic-ssl-lib \
                 --enable-kernel-poll \
-                --enable-sctp \
+                --disable-sctp \
                 --disable-builtin-zlib \
                 --disable-saved-compile-time \
-                --without-wx \
+                --disable-hipe \
                 --without-megaco \
                 --without-odbc \
                 --without-java \
+                --without-debugger \
+                --without-dialyzer \
+                --without-diameter \
                 --with-ssl && \
     make -j$(nproc) && \
     make install DESTDIR=/tmp/install && \
@@ -55,7 +64,7 @@ RUN . /etc/os-release && \
     --description "Concurrent, real-time, distributed functional language" \
     --url "https://erlang.org" \
     --license "Apache 2.0" \
-    --depends "procps, libc6, libgcc1, libstdc++6, libsctp1" \
+    --depends "procps, libc6, libgcc1, libstdc++6" \
     --depends "$(apt-cache depends libssl-dev | awk '/Depends: libssl/ {print $2}')" \
     --depends "$(apt-cache depends libtinfo-dev | awk '/Depends: libtinfo/ {print $2}')" \
     --conflicts "$(apt-cache depends erlang | awk '/:/ {gsub("[<>]", "", $2); print $2}' | paste -sd,)" \
@@ -66,7 +75,7 @@ RUN . /etc/os-release && \
 
 ARG TARGETPLATFORM
 FROM --platform=$TARGETPLATFORM ${image} as tester
-RUN apt-get update && apt-get install -y curl erlang
+RUN apt-get update && apt-get install -y curl
 ARG rabbitmq_version=3.11.0
 RUN curl -LO https://github.com/rabbitmq/rabbitmq-server/releases/download/v${rabbitmq_version}/rabbitmq-server_${rabbitmq_version}-1_all.deb
 COPY --from=builder /tmp/erlang/*.deb .
