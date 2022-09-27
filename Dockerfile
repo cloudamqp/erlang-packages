@@ -77,7 +77,8 @@ ARG TARGETPLATFORM
 FROM --platform=$TARGETPLATFORM ${image} as tester
 RUN apt-get update && apt-get install -y curl
 ARG rabbitmq_version=3.11.0
-RUN curl -LO https://github.com/rabbitmq/rabbitmq-server/releases/download/v${rabbitmq_version}/rabbitmq-server_${rabbitmq_version}-1_all.deb
+RUN curl -fLO https://github.com/rabbitmq/rabbitmq-server/releases/download/v${rabbitmq_version}/rabbitmq-server_${rabbitmq_version}-1_all.deb || \
+    curl -fLO https://github.com/rabbitmq/rabbitmq-server/releases/download/rabbitmq_v$(echo $rabbitmq_version | tr . _)/rabbitmq-server_${rabbitmq_version}-1_all.deb
 COPY --from=builder /tmp/erlang/*.deb .
 RUN apt-get install -y ./*.deb
 RUN rabbitmq-server
