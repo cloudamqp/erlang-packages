@@ -15,39 +15,31 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        image: 
+          - "ubuntu:focal"
+          - "ubuntu:bionic"
         erlang_version:
-          - 25.1
-          - 24.3.3
-          - 24.2.1
-          - 24.2
-          - 24.1.7
-          - 24.0.4
-          - 24.0.2
-          - 24.0.1
-          - 24.0
-          - 23.2.3
-          - 23.2.1
-          - 23.2
-          - 23.1.2
-          - 23.0.3
-          - 23.0.2
-          - 22.3.4.9
-          - 22.3.4.6
-          - 22.3.4.3
-          - 22.3.4.2
-          - 21.3.8.16
-          - 20.3.8.26
-        include:
-          #- image: ubuntu
-          #  codename: jammy
-          - image: ubuntu
-            codename: focal
-          - image: ubuntu
-            codename: bionic
-          - image: debian
-            codename: bullseye
-          #- image: debian
-          #  codename: buster
+          - "25.1"
+          - "24.3.3"
+          - "24.2.1"
+          - "24.2"
+          - "24.1.7"
+          - "24.0.4"
+          - "24.0.2"
+          - "24.0.1"
+          - "24.0"
+          - "23.2.3"
+          - "23.2.1"
+          - "23.2"
+          - "23.1.2"
+          - "23.0.3"
+          - "23.0.2"
+          - "22.3.4.9"
+          - "22.3.4.6"
+          - "22.3.4.3"
+          - "22.3.4.2"
+          - "21.3.8.16"
+          - "20.3.8.26"
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -58,29 +50,30 @@ jobs:
       - name: Export packages
         uses: docker/build-push-action@v3
         with:
-          cache-from: type=gha,scope=${{ github.workflow }}-${{ matrix.image }}-${{ matrix.codename }}
-          cache-to: type=gha,mode=max,scope=${{ github.workflow }}-${{ matrix.image }}-${{ matrix.codename }}
+          cache-from: type=gha,scope=${{ github.workflow }}-${{ matrix.image }}-${{ matrix.erlang_version }}
+          cache-to: type=gha,mode=max,scope=${{ github.workflow }}-${{ matrix.image }}-${{ matrix.erlang_version }}
           platforms: linux/amd64,linux/arm64
           build-args: |
             erlang_version=${{ matrix.erlang_version }}
-            image=${{ matrix.image }}:${{ matrix.codename }}
-            pkg_revision=${{ github.run_number }}
+            image=${{ matrix.image }}
           outputs: pkgs
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: erlang-${{ matrix.image }}-${{ matrix.codename }}-pkgs
+          name: erlang-${{ matrix.image }}-pkgs
           path: pkgs
       - name: Upload to Packagecloud
         run: |
           set -euxo pipefail
+          ID=$(echo "${{ matrix.image }}" | cut -f1 -d:)
+          VERSION_CODENAME=$(echo "${{ matrix.image }}" | cut -f2 -d:)
           cat > $HOME/.curlrc << EOF
           -u "${{ secrets.packagecloud_token }}:"
           --no-progress-meter
           --fail
           EOF
           curl -O https://packagecloud.io/api/v1/distributions.json
-          DIST_ID=$(jq ".deb[] | select(.index_name == \"${{ matrix.image }}\").versions[] | select(.index_name == \"${{ matrix.codename }}\").id" distributions.json)
-          find pkgs -name "*.deb" | xargs -I@ basename @ | xargs -I@ curl -XDELETE "https://packagecloud.io/api/v1/repos/cloudamqp/erlang/${{ matrix.image }}/${{ matrix.codename }}/@" || true
+          DIST_ID=$(jq ".deb[] | select(.index_name == \"$ID\").versions[] | select(.index_name == \"$VERSION_CODENAME\").id" distributions.json)
+          find pkgs -name "*.deb" | xargs -I@ basename @ | xargs -I@ curl -XDELETE "https://packagecloud.io/api/v1/repos/cloudamqp/erlang/$ID/$VERSION_CODENAME/@" || true
           find pkgs -name "*.deb" | xargs -I{} curl -XPOST -F "package[distro_version_id]=$DIST_ID" -F "package[package_file]=@{}" https://packagecloud.io/api/v1/repos/cloudamqp/erlang/packages.json
         if: ${{ github.ref == 'refs/heads/main' }}
