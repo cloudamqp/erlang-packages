@@ -59,7 +59,8 @@ jobs:
           outputs: pkgs
 
       - name: Generate artifact name
-        run: echo "IMAGE=$(echo ${{ matrix.image }} | tr : -)" >> $GITHUB_ENV
+        run: |
+          echo "IMAGE=$(echo ${{ matrix.image }} | tr : -)" >> $GITHUB_ENV
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
