@@ -13,7 +13,7 @@ RUN dpkg --add-architecture $TARGETARCH && \
     fi && \
     apt-get update && \
     apt-get install -y curl build-essential pkg-config ruby binutils \
-                       libssl-dev:$TARGETARCH ncurses-dev:$TARGETARCH libsctp-dev:$TARGETARCH && \
+                       libssl-dev:$TARGETARCH libtinfo-dev:$TARGETARCH libsctp-dev:$TARGETARCH && \
     gem install --no-document public_suffix -v 4.0.7 && \
     gem install --no-document fpm
 ARG erlang_version=25.1
@@ -55,9 +55,10 @@ RUN . /etc/os-release && \
     --description "Concurrent, real-time, distributed functional language" \
     --url "https://erlang.org" \
     --license "Apache 2.0" \
-    --depends "procps, libc6, libncurses5, libgcc1, libstdc++6, libsctp1" \
-    --depends "$(apt-cache depends libssl-dev | awk '/Depends:/ {print $2}')" \
-    $(for pkg in erlang-base-hipe erlang-base erlang-dev erlang-appmon erlang-asn1 erlang-common-test erlang-corba erlang-crypto erlang-debugger erlang-dialyzer erlang-docbuilder erlang-edoc erlang-erl-docgen erlang-et erlang-eunit erlang-gs erlang-ic erlang-inets erlang-inviso erlang-mnesia erlang-observer erlang-os-mon erlang-parsetools erlang-percept erlang-pman erlang-public-key erlang-reltool erlang-runtime-tools erlang-snmp erlang-ssh erlang-ssl erlang-syntax-tools erlang-test-server erlang-toolbar erlang-tools erlang-tv erlang-typer erlang-webtool erlang-xmerl; do echo "--conflicts $pkg --replaces $pkg --provides $pkg"; done) \
+    --depends "procps, libc6, libgcc1, libstdc++6, libsctp1" \
+    --depends "$(apt-cache depends libssl-dev | awk '/Depends: libssl/ {print $2}')" \
+    --depends "$(apt-cache depends libtinfo-dev | awk '/Depends: libtinfo/ {print $2}')" \
+    --conflicts "$(apt-cache depends erlang | awk '/:/ {gsub("[<>]", "", $2); print $2}' | paste -sd,)" \
     .
 #RUN dpkg --info *.deb
 #RUN apt-get install -y lintian
