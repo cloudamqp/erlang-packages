@@ -66,9 +66,10 @@ RUN . /etc/os-release && \
 
 ARG TARGETPLATFORM
 FROM --platform=$TARGETPLATFORM ${image} as tester
+RUN apt-get update && apt-get install -y curl erlang
+ARG rabbitmq_version=3.11.0
+RUN curl -LO https://github.com/rabbitmq/rabbitmq-server/releases/download/v${rabbitmq_version}/rabbitmq-server_${rabbitmq_version}-1_all.deb
 COPY --from=builder /tmp/erlang/*.deb .
-RUN apt-get update && apt-get install -y wget
-RUN wget --content-disposition "https://packagecloud.io/rabbitmq/rabbitmq-server/packages/debian/bullseye/rabbitmq-server_3.11.0-1_all.deb/download.deb?distro_version_id=207"
 RUN apt-get install -y ./*.deb
 RUN rabbitmq-server
 
