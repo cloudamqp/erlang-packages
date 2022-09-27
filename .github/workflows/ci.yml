@@ -58,6 +58,6 @@ jobs:
           cat > ~/.curlrc <<< "-fsSu \"${{ secrets.packagecloud_token }}:\""
           curl -O https://packagecloud.io/api/v1/distributions.json
           DIST_ID=$(jq ".deb[] | select(.index_name == \"${{ matrix.image }}\").versions[] | select(.index_name == \"${{ matrix.codename }}\").id" distributions.json)
-          find pkgs -name "*.deb" | xargs -I{} curl -XDELETE "https://packagecloud.io/api/v1/repos/cloudamqp/erlang/${{ matrix.image }}/${{ matrix.codename }}/$(basename {})" || true
+          find pkgs -name "*.deb" | xargs basename | xargs -I{} curl -XDELETE "https://packagecloud.io/api/v1/repos/cloudamqp/erlang/${{ matrix.image }}/${{ matrix.codename }}/{}" || true
           find pkgs -name "*.deb" | xargs -I{} curl -XPOST -F "package[distro_version_id]=$DIST_ID" -F "package[package_file]=@{}" https://packagecloud.io/api/v1/repos/cloudamqp/erlang/packages.json
         if: ${{ github.ref == 'refs/heads/main' }}
