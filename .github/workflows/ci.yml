@@ -57,10 +57,13 @@ jobs:
             erlang_version=${{ matrix.erlang_version }}
             image=${{ matrix.image }}
           outputs: pkgs
+
+      - name: Generate artifact name
+        run: echo "IMAGE=$(echo ${{ matrix.image }} | tr : -)" >> $GITHUB_ENV
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: erlang-${{ matrix.image }}-pkgs
+          name: erlang-${{ env.IMAGE }}-pkgs
           path: pkgs
       - name: Upload to Packagecloud
         run: |
