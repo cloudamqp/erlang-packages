@@ -55,10 +55,9 @@ jobs:
       - name: Upload to Packagecloud
         run: |
           set -euxo pipefail
-          cat > ~/.curlrc <<< "-u \"${{ secrets.packagecloud_token }}:\" --fail-with-body --no-progress-meter"
+          cat > $HOME/.curlrc <<< "--fail-with-body --no-progress-meter -u \"${{ secrets.packagecloud_token }}:\""
           curl -O https://packagecloud.io/api/v1/distributions.json
           DIST_ID=$(jq ".deb[] | select(.index_name == \"${{ matrix.image }}\").versions[] | select(.index_name == \"${{ matrix.codename }}\").id" distributions.json)
-          find pkgs -name "*.deb" | xargs basename | xargs -I@ echo @
-          find pkgs -name "*.deb" | xargs basename | xargs -I@ curl -XDELETE "https://packagecloud.io/api/v1/repos/cloudamqp/erlang/${{ matrix.image }}/${{ matrix.codename }}/@" || true
+          find pkgs -name "*.deb" | xargs -I@ basename @ | xargs -I@ curl -XDELETE "https://packagecloud.io/api/v1/repos/cloudamqp/erlang/${{ matrix.image }}/${{ matrix.codename }}/@" || true
           find pkgs -name "*.deb" | xargs -I{} curl -XPOST -F "package[distro_version_id]=$DIST_ID" -F "package[package_file]=@{}" https://packagecloud.io/api/v1/repos/cloudamqp/erlang/packages.json
         if: ${{ github.ref == 'refs/heads/main' }}
