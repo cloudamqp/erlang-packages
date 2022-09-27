@@ -55,7 +55,7 @@ jobs:
       - name: Upload to Packagecloud
         run: |
           set -euxo pipefail
-          cat > .curlrc <<< "-fsSu \"${{ secrets.packagecloud_token }}:\""
+          cat > ~/.curlrc <<< "-fsSu \"${{ secrets.packagecloud_token }}:\""
           curl -O https://packagecloud.io/api/v1/distributions.json
           DIST_ID=$(jq ".deb[] | select(.index_name == \"${{ matrix.image }}\").versions[] | select(.index_name == \"${{ matrix.codename }}\").id" distributions.json)
           find pkgs -name "*.deb" | xargs -I{} curl -XDELETE "https://packagecloud.io/api/v1/repos/cloudamqp/erlang/${{ matrix.image }}/${{ matrix.codename }}/$(basename {})" || true
