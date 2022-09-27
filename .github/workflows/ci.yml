@@ -8,9 +8,6 @@ on:
     paths-ignore:
       - README.md
 
-env:
-  erlang_version: 25.1
-
 jobs:
   debian:
     name: Debian
@@ -18,17 +15,39 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        erlang_version:
+          - 25.1
+            24.3.3
+            24.2.1
+            24.2
+            24.1.7
+            24.0.4
+            24.0.2
+            24.0.1
+            24.0
+            23.2.3
+            23.2.1
+            23.2
+            23.1.2
+            23.0.3
+            23.0.2
+            22.3.4.9
+            22.3.4.6
+            22.3.4.3
+            22.3.4.2
+            21.3.8.16
+            20.3.8.26
         include:
-          - image: ubuntu
-            codename: jammy
+          #- image: ubuntu
+          #  codename: jammy
           - image: ubuntu
             codename: focal
           - image: ubuntu
             codename: bionic
           - image: debian
             codename: bullseye
-          - image: debian
-            codename: buster
+          #- image: debian
+          #  codename: buster
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -43,7 +62,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ github.workflow }}-${{ matrix.image }}-${{ matrix.codename }}
           platforms: linux/amd64,linux/arm64
           build-args: |
-            erlang_version=${{ env.erlang_version }}
+            erlang_version=${{ matrix.erlang_version }}
             image=${{ matrix.image }}:${{ matrix.codename }}
             pkg_revision=${{ github.run_number }}
           outputs: pkgs
