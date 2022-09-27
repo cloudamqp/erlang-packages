@@ -55,7 +55,11 @@ jobs:
       - name: Upload to Packagecloud
         run: |
           set -euxo pipefail
-          cat > $HOME/.curlrc <<< "--fail-with-body --no-progress-meter -u \"${{ secrets.packagecloud_token }}:\""
+          cat > $HOME/.curlrc << EOF
+          -u "${{ secrets.packagecloud_token }}:"
+          --fail-with-body
+          --no-progress-meter
+          EOF
           curl -O https://packagecloud.io/api/v1/distributions.json
           DIST_ID=$(jq ".deb[] | select(.index_name == \"${{ matrix.image }}\").versions[] | select(.index_name == \"${{ matrix.codename }}\").id" distributions.json)
           find pkgs -name "*.deb" | xargs -I@ basename @ | xargs -I@ curl -XDELETE "https://packagecloud.io/api/v1/repos/cloudamqp/erlang/${{ matrix.image }}/${{ matrix.codename }}/@" || true
