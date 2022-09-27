@@ -39,8 +39,8 @@ jobs:
       - name: Export packages
         uses: docker/build-push-action@v3
         with:
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ github.workflow }}-${{ matrix.image }}-${{ matrix.codename }}
+          cache-to: type=gha,mode=max,scope=${{ github.workflow }}-${{ matrix.image }}-${{ matrix.codename }}
           platforms: linux/amd64,linux/arm64
           build-args: |
             erlang_version=${{ env.erlang_version }}
