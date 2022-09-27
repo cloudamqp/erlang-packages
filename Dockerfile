@@ -64,6 +64,7 @@ RUN . /etc/os-release && \
 #RUN apt-get install -y lintian
 #RUN lintian *.deb
 
+ARG TARGETPLATFORM
 FROM --platform=$TARGETPLATFORM ${image} as tester
 COPY --from=builder /tmp/erlang/*.deb .
 RUN apt-get update && apt-get install -y wget
