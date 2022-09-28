@@ -79,17 +79,16 @@ RUN . /etc/os-release && \
     --provides "erlang-base" \
     --conflicts "$(apt-cache depends erlang | awk '/:/ {gsub("[<>]", "", $2); print $2}' | paste -sd,)" \
     .
+#RUN apt-get install -y lintian && lintian *.deb || true
 
 ARG TARGETPLATFORM
 FROM --platform=$TARGETPLATFORM ${image} as tester
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y curl lintian
+RUN apt-get update && apt-get install -y curl
 ARG rabbitmq_version=3.11.0
 RUN curl -fLO https://github.com/rabbitmq/rabbitmq-server/releases/download/v${rabbitmq_version}/rabbitmq-server_${rabbitmq_version}-1_all.deb || \
     curl -fLO https://github.com/rabbitmq/rabbitmq-server/releases/download/rabbitmq_v$(echo $rabbitmq_version | tr . _)/rabbitmq-server_${rabbitmq_version}-1_all.deb
 COPY --from=builder /tmp/erlang/*.deb .
-RUN lintian *erlang*.deb || true
-RUN dpkg --info *erlang*.deb
 RUN apt-get install -y ./*.deb
 RUN erl -noshell -eval 'io:format("~p", [ssl:versions()]), init:stop().'
 RUN rabbitmq-server
