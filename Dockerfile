@@ -79,7 +79,9 @@ RUN . /etc/os-release && \
     --provides "erlang-base" \
     --conflicts "$(apt-cache depends erlang | awk '/: / {gsub("[<>]|:any", "", $2); print $2}' | paste -sd,)" \
     .
-#RUN apt-get install -y lintian && lintian *.deb || true
+#RUN apt-get install -y lintian
+#RUN dpkg --info *erlang*.deb
+#RUN lintian *erlang*.deb || true
 
 ARG TARGETPLATFORM
 FROM --platform=$TARGETPLATFORM ${image} as tester
