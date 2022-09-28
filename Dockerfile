@@ -77,7 +77,7 @@ RUN . /etc/os-release && \
     --depends "$(apt-cache depends $LIBSSL_DEV | awk '/Depends: libssl/ {print $2}')" \
     --depends "$(apt-cache depends libtinfo-dev | awk '/Depends: libtinfo/ {print $2}')" \
     --provides "erlang-base" \
-    --conflicts "$(apt-cache depends erlang | awk '/:/ {gsub("[<>]", "", $2); print $2}' | paste -sd,)" \
+    --conflicts "$(apt-cache depends erlang | awk '/: / {gsub("[<>]|:any", "", $2); print $2}' | paste -sd,)" \
     .
 #RUN apt-get install -y lintian && lintian *.deb || true
 
