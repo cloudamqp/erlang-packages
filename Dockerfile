@@ -24,6 +24,7 @@ RUN test "$TARGETARCH" = arm64 && \
     apt-get install -y crossbuild-essential-arm64 binutils-aarch64-linux-gnu && \
     eval "$(dpkg-buildflags --export=sh)" && \
     ./configure --enable-bootstrap-only && make -j$(nproc) || true
+ARG ERLC_USE_SERVER=true
 RUN eval "$(dpkg-buildflags --export=sh)" && \
     CONF_FLAGS=$([ "$TARGETARCH" = arm64 ] && \
                  echo "--host=aarch64-linux-gnu --build=$BUILDARCH-linux-gnu --disable-jit erl_xcomp_sysroot=/" || \
