@@ -30,6 +30,7 @@ RUN eval "$(dpkg-buildflags --export=sh)" && \
                 erl_xcomp_sysroot=/ \
                 --prefix=/usr \
                 --enable-jit \
+                --enable-dirty-schedulers \
                 --enable-kernel-poll \
                 --enable-dynamic-ssl-lib \
                 --enable-shared-zlib \
