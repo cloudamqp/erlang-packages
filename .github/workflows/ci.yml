@@ -61,14 +61,23 @@ jobs:
           - "20.3"
           - "20.1"
           - "20.0"
-          - "19.3.6.13"
-          - "19.3"
-          - "19.2"
-          - "19.1"
-          - "18.3"
-          - "18.2"
-          - "18.1"
-          - "18.0"
+        include:
+          - image: ubuntu:bionic
+            erlang_version: 19.3.6.13
+          - image: ubuntu:bionic
+            erlang_version: 19.3
+          - image: ubuntu:bionic
+            erlang_version: 19.2
+          - image: ubuntu:bionic
+            erlang_version: 19.1
+          - image: ubuntu:bionic
+            erlang_version: 18.3
+          - image: ubuntu:bionic
+            erlang_version: 18.2
+          - image: ubuntu:bionic
+            erlang_version: 18.1
+          - image: ubuntu:bionic
+            erlang_version: 18.0
     steps:
       - name: Checkout
         uses: actions/checkout@v3
