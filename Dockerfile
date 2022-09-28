@@ -29,7 +29,6 @@ RUN eval "$(dpkg-buildflags --export=sh)" && \
     ./configure $([ "$TARGETARCH" = arm64 ] && echo "--host=aarch64-linux-gnu --build=$BUILDARCH-linux-gnu") \
                 erl_xcomp_sysroot=/ \
                 --prefix=/usr \
-                --enable-jit \
                 --enable-dirty-schedulers \
                 --enable-kernel-poll \
                 --enable-dynamic-ssl-lib \
