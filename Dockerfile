@@ -76,6 +76,7 @@ RUN . /etc/os-release && \
     --depends "procps, libc6, libgcc1, libstdc++6, zlib1g" \
     --depends "$(apt-cache depends $LIBSSL_DEV | awk '/Depends: libssl/ {print $2}')" \
     --depends "$(apt-cache depends libtinfo-dev | awk '/Depends: libtinfo/ {print $2}')" \
+    --provides "erlang-base" \
     --conflicts "$(apt-cache depends erlang | awk '/:/ {gsub("[<>]", "", $2); print $2}' | paste -sd,)" \
     .
 
