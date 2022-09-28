@@ -26,11 +26,10 @@ RUN test "$TARGETARCH" = arm64 && \
     ./configure --enable-bootstrap-only && make -j$(nproc) || true
 ARG ERLC_USE_SERVER=true
 RUN eval "$(dpkg-buildflags --export=sh)" && \
-    CONF_FLAGS=$([ "$TARGETARCH" = arm64 ] && \
-                 echo "--host=aarch64-linux-gnu --build=$BUILDARCH-linux-gnu --disable-jit erl_xcomp_sysroot=/" || \
-                 echo "--enable-jit") && \
-    ./configure $CONF_FLAGS \
+    ./configure $([ "$TARGETARCH" = arm64 ] && echo "--host=aarch64-linux-gnu --build=$BUILDARCH-linux-gnu") \
+                erl_xcomp_sysroot=/ \
                 --prefix=/usr \
+                --enable-jit \
                 --enable-kernel-poll \
                 --enable-dynamic-ssl-lib \
                 --enable-shared-zlib \
