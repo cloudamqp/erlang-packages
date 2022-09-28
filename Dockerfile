@@ -29,9 +29,10 @@ RUN eval "$(dpkg-buildflags --export=sh)" && \
                  echo "--enable-jit") && \
     ./configure $CONF_FLAGS \
                 --prefix=/usr \
-                --enable-dirty-schedulers \
-                --enable-dynamic-ssl-lib \
                 --enable-kernel-poll \
+                --enable-dynamic-ssl-lib \
+                --enable-shared-zlib \
+                --disable-plain-emulator \
                 --disable-sctp \
                 --disable-builtin-zlib \
                 --disable-saved-compile-time \
