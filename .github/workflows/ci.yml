@@ -102,7 +102,7 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: erlang-${{ env.IMAGE }}-pkgs
+          name: erlang-${{ matrix.erlang_version }}-${{ env.IMAGE }}-deb
           path: pkgs
       - name: Upload to Packagecloud
         run: |
