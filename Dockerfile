@@ -44,6 +44,7 @@ RUN eval "$(dpkg-buildflags --export=sh)" && \
                 --without-debugger \
                 --without-dialyzer \
                 --without-diameter \
+                --with-ssl-rpath=no \
                 --with-ssl && \
     make -j$(nproc) && \
     make install DESTDIR=/tmp/install && \
