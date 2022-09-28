@@ -44,6 +44,12 @@ RUN eval "$(dpkg-buildflags --export=sh)" && \
                 --without-debugger \
                 --without-dialyzer \
                 --without-diameter \
+                --without-edoc \
+                --without-common_test \
+                --without-eunit \
+                --without-ssh \
+                --without-ftp \
+                --without-tftp \
                 --with-ssl-rpath=no \
                 --with-ssl && \
     make -j$(nproc) && \
