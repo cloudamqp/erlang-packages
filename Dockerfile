@@ -13,7 +13,7 @@ RUN dpkg --add-architecture $TARGETARCH && \
     fi && \
     apt-get update
 ARG erlang_version=25.1
-RUN LIBSSL_DEV=$(dpkg --compare-versions "${erlang_version}" gt 19.3 && echo libssl-dev || echo libssl1.0-dev); \
+RUN LIBSSL_DEV=$(dpkg --compare-versions "${erlang_version}" lt 20.0 && echo libssl1.0-dev || echo libssl-dev); \
     apt-get install -y curl build-essential pkg-config ruby binutils autoconf libwxbase3.0-dev \
                        $LIBSSL_DEV:$TARGETARCH libtinfo-dev:$TARGETARCH zlib1g-dev:$TARGETARCH && \
     gem install --no-document public_suffix -v 4.0.7 && \
@@ -60,7 +60,7 @@ RUN eval "$(dpkg-buildflags --export=sh)" && \
 
 ARG erlang_iteration=1
 RUN . /etc/os-release && \
-    LIBSSL_DEV=$(dpkg --compare-versions "${erlang_version}" gt 19.3 && echo libssl-dev || echo libssl1.0-dev); \
+    LIBSSL_DEV=$(dpkg --compare-versions "${erlang_version}" lt 20.0 && echo libssl1.0-dev || echo libssl-dev); \
     fpm -s dir -t deb \
     --chdir /tmp/install \
     --name esl-erlang \
