@@ -11,16 +11,17 @@ RUN dpkg --add-architecture $TARGETARCH && \
         echo "deb [arch=arm64] http://ports.ubuntu.com/ $VERSION_CODENAME main" >> /etc/apt/sources.list; \
         echo "deb [arch=arm64] http://ports.ubuntu.com/ $VERSION_CODENAME-updates main" >> /etc/apt/sources.list; \
     fi && \
-    apt-get update && \
+    apt-get update
+ARG erlang_version=25.1
+RUN LIBSSL_DEV=$(dpkg --compare-versions "${erlang_version}" gt 19.3 && echo libssl-dev || echo libssl1.0-dev); \
     apt-get install -y curl build-essential pkg-config ruby binutils autoconf libwxbase3.0-dev \
-                       libssl-dev:$TARGETARCH libtinfo-dev:$TARGETARCH && \
+                       $LIBSSL_DEV:$TARGETARCH libtinfo-dev:$TARGETARCH zlib1g-dev:$TARGETARCH && \
     gem install --no-document public_suffix -v 4.0.7 && \
     gem install --no-document fpm
-ARG erlang_version=25.1
 RUN curl -fL https://api.github.com/repos/erlang/otp/tarball/refs/tags/OTP-${erlang_version} | tar zx --strip-components=1
 RUN ./otp_build autoconf
 RUN test "$TARGETARCH" = arm64 && \
-    apt-get install -y gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu && \
+    apt-get install -y crossbuild-essential-arm64 binutils-aarch64-linux-gnu && \
     eval "$(dpkg-buildflags --export=sh)" && \
     ./configure --enable-bootstrap-only && make -j$(nproc) || true
 RUN eval "$(dpkg-buildflags --export=sh)" && \
@@ -52,10 +53,10 @@ RUN eval "$(dpkg-buildflags --export=sh)" && \
 
 ARG erlang_iteration=1
 RUN . /etc/os-release && \
+    LIBSSL_DEV=$(dpkg --compare-versions "${erlang_version}" gt 19.3 && echo libssl-dev || echo libssl1.0-dev); \
     fpm -s dir -t deb \
     --chdir /tmp/install \
     --name esl-erlang \
-    --package-name-suffix ${VERSION_CODENAME} \
     --version ${erlang_version} \
     --architecture ${TARGETARCH} \
     --epoch 1 \
@@ -65,8 +66,8 @@ RUN . /etc/os-release && \
     --description "Concurrent, real-time, distributed functional language" \
     --url "https://erlang.org" \
     --license "Apache 2.0" \
-    --depends "procps, libc6, libgcc1, libstdc++6" \
-    --depends "$(apt-cache depends libssl-dev | awk '/Depends: libssl/ {print $2}')" \
+    --depends "procps, libc6, libgcc1, libstdc++6, zlib1g" \
+    --depends "$(apt-cache depends $LIBSSL_DEV | awk '/Depends: libssl/ {print $2}')" \
     --depends "$(apt-cache depends libtinfo-dev | awk '/Depends: libtinfo/ {print $2}')" \
     --conflicts "$(apt-cache depends erlang | awk '/:/ {gsub("[<>]", "", $2); print $2}' | paste -sd,)" \
     .
