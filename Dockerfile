@@ -68,7 +68,7 @@ RUN . /etc/os-release && \
     --architecture ${TARGETARCH} \
     --epoch 1 \
     --iteration ${erlang_iteration} \
-    --maintainer "84codes AB <contact@cloudamqp.com>" \
+    --maintainer "CloudAMQP <contact@cloudamqp.com>" \
     --category interpreters \
     --description "Concurrent, real-time, distributed functional language" \
     --url "https://erlang.org" \
@@ -76,9 +76,8 @@ RUN . /etc/os-release && \
     --depends "procps, libc6, libgcc1, libstdc++6, zlib1g" \
     --depends "$(apt-cache depends $LIBSSL_DEV | awk '/Depends: libssl/ {print $2}')" \
     --depends "$(apt-cache depends libtinfo-dev | awk '/Depends: libtinfo/ {print $2}')" \
-    --provides "erlang-base" \
-    --conflicts "$(apt-cache depends erlang | awk '/: / {gsub("[<>]|:any", "", $2); print $2}' | paste -sd,)" \
-    .
+    --conflicts "erlang-asn1,erlang-base,erlang-base-hipe,erlang-common-test,erlang-corba,erlang-crypto,erlang-debugger,erlang-dev,erlang-dialyzer,erlang-diameter,erlang-doc,erlang-edoc,erlang-eldap,erlang-erl-docgen,erlang-et,erlang-eunit,erlang-examples,erlang-ftp,erlang-ic,erlang-ic-java,erlang-inets,erlang-inviso,erlang-jinterface,erlang-manpages,erlang-megaco,erlang-mnesia,erlang-mode,erlang-nox,erlang-observer,erlang-odbc,erlang-os-mon,erlang-parsetools,erlang-percept,erlang-public-key,erlang-reltool,erlang-runtime-tools,erlang-snmp,erlang-src,erlang-ssh,erlang-ssl,erlang-syntax-tools,erlang-tftp,erlang-tools,erlang-webtool,erlang-wx,erlang-xmerl"
+
 #RUN apt-get install -y lintian
 #RUN dpkg --info *erlang*.deb
 #RUN lintian *erlang*.deb || true
