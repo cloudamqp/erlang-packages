@@ -56,7 +56,7 @@ RUN eval "$(dpkg-buildflags --export=sh)" && \
     make -j$(nproc) && \
     make install DESTDIR=/tmp/install && \
     find /tmp/install -type d -name examples | xargs rm -r && \
-    find /tmp/install -type f -executable -exec $([ "$TARGETARCH" = arm64 ] && echo "aarch64-linux-gnu-")strip {} \;;
+    find /tmp/install -type f -executable -exec $([ "$TARGETARCH" = arm64 ] && echo aarch64-linux-gnu-)strip {} \;;
 # when cross compiling the target version of strip is required
 
 ARG erlang_iteration=1
