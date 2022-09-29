@@ -1,4 +1,4 @@
-ARG image=debian:11
+ARG image=ubuntu:20.04
 FROM --platform=$BUILDPLATFORM ${image} AS builder
 WORKDIR /tmp/erlang
 ARG BUILDARCH
