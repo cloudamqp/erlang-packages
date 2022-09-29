@@ -39,3 +39,11 @@ EOF
 apt update
 apt install esl-erlang
 ```
+
+## Development
+
+To test if a erlang version builds well you can use the `tester` stage in the [Dockerfile](./Dockerfile):
+
+```sh
+podman build --platform linux/arm64,linux/amd64 --target tester --build-arg image=ubuntu:20.04 --build-arg erlang_version=25.0.1 --build-arg rabbitmq_version=3.11.0 .
+```
