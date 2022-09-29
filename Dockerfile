@@ -30,21 +30,18 @@ RUN eval "$(dpkg-buildflags --export=sh)" && \
     ./configure $([ "$TARGETARCH" = arm64 ] && echo "--host=aarch64-linux-gnu --build=$BUILDARCH-linux-gnu") \
                 erl_xcomp_sysroot=/ \
                 --prefix=/usr \
-                --enable-dirty-schedulers \
                 --enable-kernel-poll \
                 --enable-dynamic-ssl-lib \
                 --enable-shared-zlib \
-                --disable-plain-emulator \
-                --disable-sctp \
                 --disable-builtin-zlib \
-                --disable-saved-compile-time \
+                --disable-sctp \
                 --disable-hipe \
-                --without-megaco \
-                --without-odbc \
                 --without-java \
+                --without-odbc \
+                --without-megaco \
+                --without-diameter \
                 --without-debugger \
                 --without-dialyzer \
-                --without-diameter \
                 --without-edoc \
                 --without-common_test \
                 --without-eunit \
