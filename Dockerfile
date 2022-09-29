@@ -16,6 +16,7 @@ ARG erlang_version=25.1
 RUN LIBSSL_DEV=$(dpkg --compare-versions "${erlang_version}" lt 20.0 && echo libssl1.0-dev || echo libssl-dev); \
     apt-get install -y curl build-essential pkg-config ruby binutils autoconf libwxbase3.0-dev \
                        $LIBSSL_DEV:$TARGETARCH libtinfo-dev:$TARGETARCH zlib1g-dev:$TARGETARCH && \
+    ruby -e "exit RUBY_VERSION.to_f > 2.5" || \
     gem install --no-document public_suffix -v 4.0.7 && \
     gem install --no-document fpm
 RUN curl -fL https://api.github.com/repos/erlang/otp/tarball/refs/tags/OTP-${erlang_version} | tar zx --strip-components=1
