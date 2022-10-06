@@ -27,12 +27,14 @@ RUN test "$TARGETARCH" = arm64 && \
     ./configure --enable-bootstrap-only && make -j$(nproc) || true
 ARG ERLC_USE_SERVER=false
 RUN eval "$(dpkg-buildflags --export=sh)" && \
+    ENABLE_MSACC_EXTRA=$(dpkg --compare-versions "${erlang_version}" lt 19.0 && echo '' || echo '--with-microstate-accounting=extra'); \
     ./configure $([ "$TARGETARCH" = arm64 ] && echo "--host=aarch64-linux-gnu --build=$BUILDARCH-linux-gnu") \
                 erl_xcomp_sysroot=/ \
                 --prefix=/usr \
                 --enable-kernel-poll \
                 --enable-dynamic-ssl-lib \
                 --enable-shared-zlib \
+                  ENABLE_MSACC_EXTRA \
                 --disable-builtin-zlib \
                 --disable-sctp \
                 --disable-hipe \
