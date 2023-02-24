@@ -25,7 +25,7 @@ WORKDIR /tmp/openssl
 RUN libssl_version=$(dpkg-query --showformat='${Version}' --show libssl-dev); \
     if (dpkg --compare-versions "${erlang_version}" ge 20.0 && dpkg --compare-versions "${erlang_version}" lt 24.2 && dpkg --compare-versions "$libssl_version" ge 3.0.0); then \
         curl https://www.openssl.org/source/openssl-1.1.1t.tar.gz | tar zx --strip-components=1 && \
-        ./Configure no-shared $([ "$TARGETARCH" = arm64 ] && echo "linux-aarch64 --cross-compile-prefix=aarch64-linux-gnu-") && \
+        ./Configure no-shared $([ "$TARGETARCH" = arm64 ] && echo "linux-aarch64 --cross-compile-prefix=aarch64-linux-gnu-" || echo "linux-x86_64") && \
         make -j$(nproc) && make install_sw; \
     fi
 
@@ -38,13 +38,25 @@ RUN if (dpkg --compare-versions "${erlang_version}" lt 20.0); then \
 
 WORKDIR /tmp/erlang
 RUN curl -fL https://api.github.com/repos/erlang/otp/tarball/refs/tags/OTP-${erlang_version} | tar zx --strip-components=1
+
+# erlang before 24.0 requires gcc-9 and autoconf-2.69
+RUN if (grep -q jammy /etc/os-release && dpkg --compare-versions "$erlang_version" lt 24); then \
+        apt-get install -y gcc-9 autoconf2.69 && \
+        ln -sf /usr/bin/gcc-9 /usr/bin/gcc && \
+        ln -sf /usr/bin/autoconf2.69 /usr/bin/autoconf; \
+        if [ "$TARGETARCH" = arm64 ]; then \
+            apt-get install -y gcc-9-aarch64-linux-gnu && \
+            ln -sf /usr/bin/aarch64-linux-gnu-gcc-9 /usr/bin/aarch64-linux-gnu-gcc; \
+        fi \
+    fi
+
 RUN ./otp_build autoconf
 RUN if [ "$TARGETARCH" = arm64 ]; then \
         ./configure --enable-bootstrap-only && make -j$(nproc); \
     fi
 ARG ERLC_USE_SERVER=false
 RUN libssl_version=$(dpkg-query --showformat='${Version}' --show libssl-dev); \
-    STATIC_OPENSSL=$(dpkg --compare-versions "${erlang_version}" lt 20.0 || (dpkg --compare-versions "${erlang_version}" lt 24.2 && dpkg --compare-versions "$libssl_version" ge 3.0.0) && echo y); \
+    STATIC_OPENSSL=$(dpkg --compare-versions "${erlang_version}" lt 20 || (dpkg --compare-versions "${erlang_version}" lt 24.2 && dpkg --compare-versions "$libssl_version" ge 3) && echo y); \
     ./configure erl_xcomp_sysroot=/ \
                 --prefix=/usr \
                 --enable-kernel-poll \
