@@ -12,8 +12,6 @@ RUN dpkg --add-architecture $TARGETARCH && \
     fi && \
     apt-get update
 
-#ARG erlang_version=24.1.7
-ARG erlang_version=19.3
 RUN apt-get install -y curl build-essential pkg-config ruby binutils autoconf libwxbase3.0-dev \
                        libssl-dev:$TARGETARCH libtinfo-dev:$TARGETARCH zlib1g-dev:$TARGETARCH libsnmp-dev:$TARGETARCH && \
     (ruby -e "exit RUBY_VERSION.to_f > 2.5" || gem install --no-document public_suffix -v 4.0.7) && \
@@ -21,6 +19,7 @@ RUN apt-get install -y curl build-essential pkg-config ruby binutils autoconf li
 RUN if [ "$TARGETARCH" = arm64 ]; then apt-get install -y crossbuild-essential-arm64 binutils-aarch64-linux-gnu; fi
 
 WORKDIR /tmp/openssl
+ARG erlang_version=19.3
 # Erlang before 24.2 didn't support libssl3, so statically compile 1.1.1 if no available from the OS
 RUN libssl_version=$(dpkg-query --showformat='${Version}' --show libssl-dev); \
     if (dpkg --compare-versions "${erlang_version}" ge 20.0 && dpkg --compare-versions "${erlang_version}" lt 24.2 && dpkg --compare-versions "$libssl_version" ge 3.0.0); then \
@@ -44,19 +43,21 @@ RUN if (grep -q jammy /etc/os-release && dpkg --compare-versions "$erlang_versio
         apt-get install -y gcc-9 autoconf2.69 && \
         ln -sf /usr/bin/gcc-9 /usr/bin/gcc && \
         ln -sf /usr/bin/autoconf2.69 /usr/bin/autoconf; \
-        if [ "$TARGETARCH" = arm64 ]; then \
+        if [ "$TARGETARCH" = arm64 ] && [ "$BUILDARCH" != arm64 ]; then \
             apt-get install -y gcc-9-aarch64-linux-gnu && \
             ln -sf /usr/bin/aarch64-linux-gnu-gcc-9 /usr/bin/aarch64-linux-gnu-gcc; \
         fi \
     fi
 
+ARG ERLC_USE_SERVER=false
 RUN ./otp_build autoconf
 RUN if [ "$TARGETARCH" = arm64 ]; then \
+        eval "$(dpkg-buildflags --export=sh)" && \
         ./configure --enable-bootstrap-only && make -j$(nproc); \
     fi
-ARG ERLC_USE_SERVER=false
 RUN libssl_version=$(dpkg-query --showformat='${Version}' --show libssl-dev); \
     STATIC_OPENSSL=$(dpkg --compare-versions "${erlang_version}" lt 20 || (dpkg --compare-versions "${erlang_version}" lt 24.2 && dpkg --compare-versions "$libssl_version" ge 3) && echo y); \
+    eval "$(dpkg-buildflags --export=sh)" && \
     ./configure erl_xcomp_sysroot=/ \
                 --prefix=/usr \
                 --enable-kernel-poll \
@@ -109,7 +110,6 @@ ARG TARGETPLATFORM
 FROM --platform=$TARGETPLATFORM ${image} as tester
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y curl
-#ARG rabbitmq_version=3.10.7
 ARG rabbitmq_version=3.7.10
 RUN curl -fLO https://github.com/rabbitmq/rabbitmq-server/releases/download/v${rabbitmq_version}/rabbitmq-server_${rabbitmq_version}-1_all.deb || \
     curl -fLO https://github.com/rabbitmq/rabbitmq-server/releases/download/rabbitmq_v$(echo $rabbitmq_version | tr . _)/rabbitmq-server_${rabbitmq_version}-1_all.deb
