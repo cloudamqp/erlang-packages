@@ -19,17 +19,17 @@ RUN apt-get install -y curl build-essential pkg-config ruby binutils autoconf li
 RUN if [ "$TARGETARCH" = arm64 ]; then apt-get install -y crossbuild-essential-arm64 binutils-aarch64-linux-gnu; fi
 
 WORKDIR /tmp/openssl
-ARG erlang_version=19.3
+ARG erlang_version=24.0
 # Erlang before 24.2 didn't support libssl3, so statically compile 1.1.1 if no available from the OS
 RUN libssl_version=$(dpkg-query --showformat='${Version}' --show libssl-dev); \
-    if (dpkg --compare-versions "${erlang_version}" ge 20.0 && dpkg --compare-versions "${erlang_version}" lt 24.2 && dpkg --compare-versions "$libssl_version" ge 3.0.0); then \
+    if (dpkg --compare-versions "$erlang_version" ge 20.0 && dpkg --compare-versions "$erlang_version" lt 24.2 && dpkg --compare-versions "$libssl_version" ge 3.0.0); then \
         curl https://www.openssl.org/source/openssl-1.1.1t.tar.gz | tar zx --strip-components=1 && \
         ./Configure no-shared $([ "$TARGETARCH" = arm64 ] && echo "linux-aarch64 --cross-compile-prefix=aarch64-linux-gnu-" || echo "linux-x86_64") && \
         make -j$(nproc) && make install_sw; \
     fi
 
 # Erlang before 20.0 didn't support libssl1.1, so statically compile 1.0.2
-RUN if (dpkg --compare-versions "${erlang_version}" lt 20.0); then \
+RUN if (dpkg --compare-versions "$erlang_version" lt 20.0); then \
         curl https://www.openssl.org/source/old/1.0.2/openssl-1.0.2u.tar.gz | tar zx --strip-components=1 && \
         ./Configure --prefix=/usr/local --openssldir=/usr/local/ssl no-shared $([ "$TARGETARCH" = arm64 ] && echo "linux-aarch64 --cross-compile-prefix=aarch64-linux-gnu-" || echo "linux-x86_64") "-fPIC" && \
         make -j$(nproc) && make install_sw; \
@@ -52,12 +52,10 @@ RUN if (grep -q jammy /etc/os-release && dpkg --compare-versions "$erlang_versio
 ARG ERLC_USE_SERVER=false
 RUN ./otp_build autoconf
 RUN if [ "$TARGETARCH" = arm64 ]; then \
-        eval "$(dpkg-buildflags --export=sh)" && \
         ./configure --enable-bootstrap-only && make -j$(nproc); \
     fi
 RUN libssl_version=$(dpkg-query --showformat='${Version}' --show libssl-dev); \
-    STATIC_OPENSSL=$(dpkg --compare-versions "${erlang_version}" lt 20 || (dpkg --compare-versions "${erlang_version}" lt 24.2 && dpkg --compare-versions "$libssl_version" ge 3) && echo y); \
-    eval "$(dpkg-buildflags --export=sh)" && \
+    STATIC_OPENSSL=$(dpkg --compare-versions "$erlang_version" lt 20 || (dpkg --compare-versions "$erlang_version" lt 24.2 && dpkg --compare-versions "$libssl_version" ge 3) && echo y); \
     ./configure erl_xcomp_sysroot=/ \
                 --prefix=/usr \
                 --enable-kernel-poll \
@@ -77,7 +75,7 @@ RUN libssl_version=$(dpkg-query --showformat='${Version}' --show libssl-dev); \
                 --with-ssl-rpath=no \
                 --with-ssl \
                 $([ "$TARGETARCH" = arm64 ] && echo "--host=aarch64-linux-gnu --build=$BUILDARCH-linux-gnu") \
-                $([ "$STATIC_OPENSSL" = y ] && echo "--with-ssl=/usr/local/ --disable-dynamic-ssl-lib" || echo --enable-dynamic-ssl-lib ) && \
+                $([ "$STATIC_OPENSSL" = y ] && echo "--with-ssl=/usr/local/ --disable-dynamic-ssl-lib" || echo --enable-dynamic-ssl-lib) && \
     make -j$(nproc) && \
     make install DESTDIR=/tmp/install && \
     find /tmp/install -type d -name examples | xargs rm -r && \
@@ -89,10 +87,10 @@ RUN readelf=$([ "$TARGETARCH" = arm64 ] && echo aarch64-linux-gnu-)readelf; \
     fpm -s dir -t deb \
     --chdir /tmp/install \
     --name esl-erlang \
-    --version ${erlang_version} \
-    --architecture ${TARGETARCH} \
+    --version $erlang_version \
+    --architecture $TARGETARCH \
     --epoch 1 \
-    --iteration ${erlang_iteration} \
+    --iteration $erlang_iteration \
     --maintainer "CloudAMQP <contact@cloudamqp.com>" \
     --category interpreters \
     --description "Concurrent, real-time, distributed functional language" \
