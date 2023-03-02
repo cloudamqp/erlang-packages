@@ -49,6 +49,9 @@ RUN if (grep -q jammy /etc/os-release && dpkg --compare-versions "$erlang_versio
         fi \
     fi
 
+ARG CFLAGS="-g -O2 -fdebug-prefix-map=/=. -fstack-protector-strong -Wformat -Werror=format-security"
+ARG CPPFLAGS="-Wdate-time -D_FORTIFY_SOURCE=2"
+ARG LDFLAGS="-Wl,-Bsymbolic-functions -Wl,-z,relro"
 ARG ERLC_USE_SERVER=false
 RUN ./otp_build autoconf
 RUN if [ "$TARGETARCH" = arm64 ]; then \
