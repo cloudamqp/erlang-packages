@@ -38,8 +38,8 @@ RUN if (dpkg --compare-versions "$erlang_version" lt 20.0); then \
 WORKDIR /tmp/erlang
 RUN curl -fL https://api.github.com/repos/erlang/otp/tarball/refs/tags/OTP-${erlang_version} | tar zx --strip-components=1
 
-# erlang before 24.0 requires gcc-9 and autoconf-2.69
-RUN if (grep -q jammy /etc/os-release && dpkg --compare-versions "$erlang_version" lt 24); then \
+# erlang before 24.1 requires gcc-9 and autoconf-2.69
+RUN if (grep -q jammy /etc/os-release && dpkg --compare-versions "$erlang_version" lt 24.1); then \
         apt-get install -y gcc-9 autoconf2.69 && \
         ln -sf /usr/bin/gcc-9 /usr/bin/gcc && \
         ln -sf /usr/bin/autoconf2.69 /usr/bin/autoconf; \
@@ -78,7 +78,7 @@ RUN libssl_version=$(dpkg-query --showformat='${Version}' --show libssl-dev); \
                 --with-ssl-rpath=no \
                 --with-ssl \
                 $([ "$TARGETARCH" = arm64 ] && echo "--host=aarch64-linux-gnu --build=$BUILDARCH-linux-gnu") \
-                $([ "$STATIC_OPENSSL" = y ] && echo "--with-ssl=/usr/local/ --disable-dynamic-ssl-lib" || echo --enable-dynamic-ssl-lib) && \
+                $([ "$STATIC_OPENSSL" = y ] && echo "--with-ssl=/usr/local --disable-dynamic-ssl-lib" || echo --enable-dynamic-ssl-lib) && \
     make -j$(nproc) && \
     make install DESTDIR=/tmp/install && \
     find /tmp/install -type d -name examples | xargs rm -r && \
