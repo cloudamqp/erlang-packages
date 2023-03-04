@@ -20,11 +20,18 @@ jobs:
           - "ubuntu:focal"
           - "ubuntu:bionic"
         erlang_version:
+          - "25.2.3"
+          - "25.2.2"
+          - "25.2.1"
+          - "25.1.1"
           - "25.1"
           - "25.0.4"
           - "25.0.3"
           - "25.0.1"
           - "25.0"
+          - "24.3.4.7"
+          - "24.3.4.6"
+          - "24.3.4.5"
           - "24.3.4.3"
           - "24.3.4.2"
           - "24.3.4.1"
@@ -60,27 +67,16 @@ jobs:
           - "20.3.8.26"
           - "20.3.8.22"
           - "20.3"
-          - "20.1.7.1"
           - "20.1"
-          - "20.0.5"
           - "20.0"
-        include:
-          - image: ubuntu:bionic
-            erlang_version: 19.3.6.13
-          - image: ubuntu:bionic
-            erlang_version: 19.3
-          - image: ubuntu:bionic
-            erlang_version: 19.2
-          - image: ubuntu:bionic
-            erlang_version: 19.1
-          - image: ubuntu:bionic
-            erlang_version: 18.3
-          - image: ubuntu:bionic
-            erlang_version: 18.2
-          - image: ubuntu:bionic
-            erlang_version: 18.1
-          - image: ubuntu:bionic
-            erlang_version: "18.0"
+          - "19.3.6.13"
+          - "19.3"
+          - "19.2"
+          - "19.1"
+          - "18.3"
+          - "18.2"
+          - "18.1"
+          - "18.0"
     steps:
       - name: Checkout
         uses: actions/checkout@v3
