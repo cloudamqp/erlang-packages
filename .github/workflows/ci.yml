@@ -20,6 +20,7 @@ jobs:
           - "ubuntu:focal"
           - "ubuntu:bionic"
         erlang_version:
+          - "26.0"
           - "25.3"
           - "25.2.3"
           - "25.2.2"
@@ -79,6 +80,10 @@ jobs:
           - "18.2"
           - "18.1"
           - "18.0"
+        exclude:
+          # compilation fails on bionic, let's skip it for now
+          - image: "ubuntu:bionic"
+            erlang_version: "26.0"
     steps:
       - name: Checkout
         uses: actions/checkout@v3
