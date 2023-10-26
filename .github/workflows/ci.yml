@@ -20,7 +20,9 @@ jobs:
           - "ubuntu:focal"
           - "ubuntu:bionic"
         erlang_version:
+          - "26.1.2"
           - "26.0"
+          - "25.3.2.7"
           - "25.3"
           - "25.2.3"
           - "25.2.2"
@@ -82,6 +84,8 @@ jobs:
           - "18.0"
         exclude:
           # compilation fails on bionic, let's skip it for now
+          - image: "ubuntu:bionic"
+            erlang_version: "26.1.2"
           - image: "ubuntu:bionic"
             erlang_version: "26.0"
     steps:
