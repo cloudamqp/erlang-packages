@@ -24,6 +24,7 @@ class Packagecloud
     @token = token
     @packages = packages
     @distributions = distributions
+    @lock = Mutex.new
   end
 
   def exists?(dist_name, name)
@@ -38,7 +39,7 @@ class Packagecloud
     form_data = [["package[distro_version_id]", dist_id(dist_name).to_s],
                  ["package[package_file]", file]]
     request.set_form form_data, "multipart/form-data"
-    response = @http.request(request)
+    response = @lock.synchronize { @http.request(request) }
     case response
     when Net::HTTPCreated
       package = JSON.parse(response.body)
@@ -92,7 +93,7 @@ github = Github.new
 DISTS = %w[ubuntu/jammy ubuntu/focal].freeze
 PLATFORMS = %w[amd64 arm64].freeze
 
-to_build = []
+to_build = Queue.new
 github.releases do |r|
   next if r["prerelease"]
   next if r["draft"]
@@ -100,7 +101,8 @@ github.releases do |r|
   DISTS.each do |dist|
     PLATFORMS.each do |platform|
       filename = "esl-erlang_#{version}-1_#{platform}.deb"
-      to_build << [dist, platform, version] unless packagecloud.exists? dist, filename
+      next if packagecloud.exists? dist, filename
+      to_build << p([dist, platform, version])
     end
   end
 end
@@ -108,15 +110,20 @@ end
 puts "Packages to build:"
 pp to_build
 
-to_build.each do |dist, platform, version|
-  system("depot", "build",
-         "--platform", "linux/#{platform}",
-         "--build-arg", "erlang_version=#{version}",
-         "--build-arg", "image=#{dist.sub('/', ':')}",
-         "--output", ".",
-         ".", exception: true)
-  File.open("esl-erlang_#{version}-1_#{platform}.deb") do |file|
-    packagecloud.upload(dist, file)
-    File.unlink(file)
+Array.new(10) do
+  Thread.new do
+    loop do
+      dist, platform, version = to_build.pop || break
+      system("depot", "build",
+             "--platform", "linux/#{platform}",
+             "--build-arg", "erlang_version=#{version}",
+             "--build-arg", "image=#{dist.sub('/', ':')}",
+             "--output", ".",
+             ".", exception: true)
+      File.open("esl-erlang_#{version}-1_#{platform}.deb") do |file|
+        packagecloud.upload(dist, file)
+        File.unlink(file)
+      end
+    end
   end
 end
