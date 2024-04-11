@@ -109,7 +109,7 @@ puts "Packages to build:"
 pp to_build
 
 to_build.each do |dist, platform, version|
-  system("podman", "build",
+  system("docker", "build",
          "--platform", "linux/#{platform}",
          "--build-arg", "erlang_version=#{version}",
          "--build-arg", "image=#{dist.sub('/', ':')}",
