@@ -15,14 +15,14 @@ ARG erlang_version=24.0
 RUN libssl_version=$(dpkg-query --showformat='${Version}' --show libssl-dev); \
     if (dpkg --compare-versions "$erlang_version" ge 20.0 && dpkg --compare-versions "$erlang_version" lt 24.2 && dpkg --compare-versions "$libssl_version" ge 3.0.0); then \
         curl https://www.openssl.org/source/openssl-1.1.1t.tar.gz | tar zx --strip-components=1 && \
-        ./Configure no-shared && \
+        ./config no-shared && \
         make -j$(nproc) && make install_sw; \
     fi
 
 # Erlang before 20.0 didn't support libssl1.1, so statically compile 1.0.2
 RUN if (dpkg --compare-versions "$erlang_version" lt 20.0); then \
         curl https://www.openssl.org/source/old/1.0.2/openssl-1.0.2u.tar.gz | tar zx --strip-components=1 && \
-        ./Configure --prefix=/usr/local --openssldir=/usr/local/ssl no-shared -fPIC && \
+        ./config --prefix=/usr/local --openssldir=/usr/local/ssl no-shared -fPIC && \
         make -j$(nproc) && make install_sw; \
     fi
 
