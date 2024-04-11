@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 require "net/http"
 require "json"
+require "etc"
 
 class Github
   def initialize(token = ENV.fetch("GITHUB_TOKEN_PUBLIC_ACCESS"))
