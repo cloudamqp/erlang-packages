@@ -113,9 +113,9 @@ to_build.each do |dist, platform, version|
          "--platform", "linux/#{platform}",
          "--build-arg", "erlang_version=#{version}",
          "--build-arg", "image=#{dist.sub('/', ':')}",
-         "--output", "/tmp/",
+         "--output", Dir.tmpdir,
          ".", exception: true)
-  File.open("/tmp/esl-erlang_#{version}-1_#{platform}.deb") do |file|
+  File.open(File.join(Dir.tmpdir, "esl-erlang_#{version}-1_#{platform}.deb")) do |file|
     packagecloud.upload(dist, file)
     File.unlink(file)
   end
