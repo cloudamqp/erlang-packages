@@ -15,6 +15,7 @@ RUN dpkg --add-architecture $TARGETARCH && \
 RUN apt-get install -y curl build-essential pkg-config ruby binutils autoconf libwxbase3.0-dev \
                        libssl-dev:$TARGETARCH libtinfo-dev:$TARGETARCH zlib1g-dev:$TARGETARCH libsnmp-dev:$TARGETARCH && \
     (ruby -e "exit RUBY_VERSION.to_f > 2.5" || gem install --no-document public_suffix -v 4.0.7) && \
+    (ruby -e "exit RUBY_VERSION.to_f >= 3.0" || gem install --no-document dotenv -v 2.8.1 ) && \
     gem install --no-document fpm
 RUN if [ "$TARGETARCH" = arm64 ]; then apt-get install -y crossbuild-essential-arm64 binutils-aarch64-linux-gnu; fi
 
