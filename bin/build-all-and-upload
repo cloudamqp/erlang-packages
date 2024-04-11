@@ -107,8 +107,7 @@ github.releases do |r|
   end
 end
 
-puts "Packages to build:"
-pp to_build
+puts "#{to_build.size} versions to build"
 
 Array.new(10) do
   Thread.new do
