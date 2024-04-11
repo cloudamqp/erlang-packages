@@ -104,17 +104,17 @@ github.releases do |r|
     end
   end
 end
-puts "Packages to build"
+
+puts "Packages to build:"
 pp to_build
 
 to_build.each do |dist, platform, version|
-  image = dist.sub("/", ":")
   system("podman", "build",
          "--platform", "linux/#{platform}",
          "--build-arg", "erlang_version=#{version}",
-         "--build-arg", "image=#{image}",
+         "--build-arg", "image=#{dist.sub('/', ':')}",
          "--output", "/tmp/",
-         ".") || raise("Could not build")
+         ".", exception: true)
   File.open("/tmp/esl-erlang_#{version}-1_#{platform}.deb") do |file|
     packagecloud.upload(dist, file)
     File.unlink(file)
