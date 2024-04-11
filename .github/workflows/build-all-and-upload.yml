@@ -1,0 +1,22 @@
+name: Build all Erlang versions and upload to PackageCloud
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 8 * * 1-5' # 08:30 mon-fri
+
+jobs:
+  build-all-and-upload:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      - name: Build all missing versions of Erlang and upload to PackageCloud
+        env:
+          GITHUB_TOKEN_PUBLIC_ACCESS: ${{ secrets.GH_TOKEN_PUBLIC_ACCESS }}
+          PACKAGECLOUD_TOKEN: ${{ secrets.PACKAGECLOUD_TOKEN }}
+        run : bin/build-all-and-upload

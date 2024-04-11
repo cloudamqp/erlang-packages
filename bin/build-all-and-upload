@@ -1,0 +1,122 @@
+#!/usr/bin/env ruby
+require "net/http"
+require "json"
+
+class Github
+  def initialize(token = ENV.fetch("GITHUB_TOKEN_PUBLIC_ACCESS"))
+    @auth = { Authorization: "Bearer #{token}" }
+  end
+
+  def releases(&blk)
+    Net::HTTP.start("api.github.com", use_ssl: true) do |api|
+      1.upto(10).each do |page|
+        resp = api.get("/repos/erlang/otp/releases?per_page=100&&page=#{page}", @auth)
+        raise "Unexpected response: #{resp} #{resp.body}" unless Net::HTTPOK === resp
+        JSON.parse(resp.body).each(&blk)
+      end
+    end
+  end
+end
+
+class Packagecloud
+  def initialize(token = ENV.fetch("PACKAGECLOUD_TOKEN"))
+    @http = Net::HTTP.start("packagecloud.io", use_ssl: true)
+    @token = token
+    @packages = packages
+    @distributions = distributions
+  end
+
+  def exists?(dist_name, name)
+    @packages.any? { |p| p["filename"] == name && p["distro_version"] == dist_name }
+  end
+
+  def upload(dist_name, file)
+    puts "Uploading #{File.basename file.path} (#{(file.size / 1024.0**2).round(1)} MB)"
+    file.rewind
+    request = Net::HTTP::Post.new("/api/v1/repos/cloudamqp/erlang/packages.json")
+    request.basic_auth(@token, "")
+    form_data = [["package[distro_version_id]", dist_id(dist_name).to_s],
+                 ["package[package_file]", file]]
+    request.set_form form_data, "multipart/form-data"
+    response = @http.request(request)
+    case response
+    when Net::HTTPCreated
+      package = JSON.parse(response.body)
+      puts "#{package['filename']} for #{package['distro_version']} uploaded"
+    else raise "Unexpected response: #{response} #{response.body}"
+    end
+  end
+
+  def dist_id(name)
+    @distributions.each_value do |type|
+      type.each do |dist|
+        dist["versions"].each do |v|
+          dist_name = "#{dist['index_name']}/#{v['index_name']}"
+          return v["id"] if dist_name == name
+        end
+      end
+    end
+  end
+
+  private
+
+  def packages
+    packages = []
+    1.upto(10) do |page|
+      path = "/api/v1/repos/cloudamqp/erlang/packages.json?per_page=250&page=#{page}"
+      request = Net::HTTP::Get.new(path)
+      request.basic_auth(@token, "")
+      resp = @http.request request
+      raise "Unexpected response: #{resp} #{resp.body}" unless Net::HTTPOK === resp
+
+      data = JSON.parse(resp.body)
+      break if data.empty?
+      packages.concat data
+    end
+    packages
+  end
+
+  def distributions
+    request = Net::HTTP::Get.new("/api/v1/distributions.json")
+    request.basic_auth(@token, "")
+    resp = @http.request request
+    raise "Unexpected response: #{resp} #{resp.body}" unless Net::HTTPOK === resp
+
+    JSON.parse resp.body
+  end
+end
+
+packagecloud = Packagecloud.new
+github = Github.new
+
+DISTS = %w[ubuntu/jammy ubuntu/focal].freeze
+PLATFORMS = %w[amd64 arm64].freeze
+
+to_build = []
+github.releases do |r|
+  next if r["prerelease"]
+  next if r["draft"]
+  version = r["tag_name"].sub("OTP-", "")
+  DISTS.each do |dist|
+    PLATFORMS.each do |platform|
+      filename = "esl-erlang_#{version}-1_#{platform}.deb"
+      to_build << [dist, platform, version] unless packagecloud.exists? dist, filename
+    end
+  end
+end
+puts "Packages to build"
+pp to_build
+
+to_build.each do |dist, platform, version|
+  image = dist.sub("/", ":")
+  system("podman", "build",
+         "--platform", "linux/#{platform}",
+         "--build-arg", "erlang_version=#{version}",
+         "--build-arg", "image=#{image}",
+         "--output", "/tmp/",
+         ".") || raise("Could not build")
+  File.open("/tmp/esl-erlang_#{version}-1_#{platform}.deb") do |file|
+    packagecloud.upload(dist, file)
+    File.unlink(file)
+  end
+end
