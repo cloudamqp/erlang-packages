@@ -114,6 +114,9 @@ when "missing-versions"
   JSON.dump(to_build.take(256), $stdout)
   warn "Result truncated to 256, actual missing versions: #{to_build.size}" if to_build.size > 256
 when "build-and-upload"
+  if ARGV.size != 3
+    abort "#{File.basename $PROGRAM_NAME} build-and-upload <dist> <platform> <version>"
+  end
   dist, platform, version = ARGV.shift(3)
   system("depot", "build",
          "--platform", "linux/#{platform}",

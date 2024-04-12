@@ -45,4 +45,4 @@ jobs:
         env:
           GITHUB_TOKEN_PUBLIC_ACCESS: ${{ secrets.GITHUB_TOKEN }}
           PACKAGECLOUD_TOKEN: ${{ secrets.PACKAGECLOUD_TOKEN }}
-        run : bin/build-all-and-upload build-and-upload ${{ matrix.image }} ${{ matrix.platform }} ${{ matrix.erlang_version }}
+        run : bin/build-all-and-upload build-and-upload ${{ matrix.image }} ${{ matrix.platform }} ${{ matrix.version }}
