@@ -111,7 +111,8 @@ when "missing-versions"
   end
   # Output for Github Action
   print "matrix="
-  JSON.dump(to_build, $stdout)
+  JSON.dump(to_build.take(256), $stdout)
+  warn "Result truncated to 256, actual missing versions: #{to_build.size}" if to_build.size > 256
 when "build-and-upload"
   dist, platform, version = ARGV.shift(3)
   system("depot", "build",
