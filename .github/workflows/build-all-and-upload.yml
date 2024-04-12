@@ -1,0 +1,51 @@
+name: Build all Erlang versions and upload to PackageCloud
+
+on:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 8 * * 1-5' # 08:30 mon-fri
+  push:
+    branches:
+      - main
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+jobs:
+  missing-versions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ruby
+      - name: Check missing versions
+        id: missing-versions
+        run: echo "matrix=$(bin/missing-versions)" >> "$GITHUB_OUTPUT"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PACKAGECLOUD_TOKEN: ${{ secrets.PACKAGECLOUD_TOKEN }}
+    outputs:
+      matrix: ${{ steps.missing-versions.outputs.matrix }}
+
+  build-and-upload:
+    needs: missing-versions
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 10
+      matrix:
+        include: ${{ fromJson(needs.missing-versions.outputs.matrix) }}
+      fail-fast: false
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ruby
+      - uses: depot/use-action@v1
+      - name: Build Erlang version and upload to PackageCloud
+        env:
+          PACKAGECLOUD_TOKEN: ${{ secrets.PACKAGECLOUD_TOKEN }}
+        run : bin/build-and-upload ${{ matrix.version }} ${{ matrix.image }} ${{ matrix.platform }}
