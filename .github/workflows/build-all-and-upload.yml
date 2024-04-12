@@ -7,8 +7,26 @@ on:
     - cron: '30 8 * * 1-5' # 08:30 mon-fri
 
 jobs:
-  build-all-and-upload:
+  missing-versions:
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: ruby
+      - name: Check missing versions
+        run: bin/build-all-and-upload missing-versions >> "$GITHUB_OUTPUT"
+        env:
+          GITHUB_TOKEN_PUBLIC_ACCESS: ${{ secrets.GITHUB_TOKEN }}
+          PACKAGECLOUD_TOKEN: ${{ secrets.PACKAGECLOUD_TOKEN }}
+
+  build-and-upload:
+    needs: missing-versions
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 10
+      matrix:
+        include: ${{ fromJson(needs.missing-versions.outputs.matrix) }}
     permissions:
       contents: read
       id-token: write
@@ -16,12 +34,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '3.3'
+          ruby-version: ruby
       - uses: depot/use-action@v1
         with:
           project: srqn8st7l7
-      - name: Build all missing versions of Erlang and upload to PackageCloud
+      - name: Build all versions of Erlang and upload to PackageCloud
         env:
           GITHUB_TOKEN_PUBLIC_ACCESS: ${{ secrets.GITHUB_TOKEN }}
           PACKAGECLOUD_TOKEN: ${{ secrets.PACKAGECLOUD_TOKEN }}
-        run : bin/build-all-and-upload
+        run : bin/build-all-and-upload build-and-upload ${{ matrix.image }} ${{ matrix.platform }} ${{ matrix.erlang_version }}

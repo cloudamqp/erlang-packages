@@ -90,39 +90,40 @@ end
 packagecloud = Packagecloud.new
 github = Github.new
 
-DISTS = %w[ubuntu/jammy ubuntu/focal].freeze
-PLATFORMS = %w[amd64 arm64].freeze
+case ARGV.shift
+when "missing-versions"
+  DISTS = %w[ubuntu/jammy ubuntu/focal].freeze
+  PLATFORMS = %w[amd64 arm64].freeze
 
-to_build = Queue.new
-github.releases do |r|
-  next if r["prerelease"]
-  next if r["draft"]
-  version = r["tag_name"].sub("OTP-", "")
-  DISTS.each do |dist|
-    PLATFORMS.each do |platform|
-      filename = "esl-erlang_#{version}-1_#{platform}.deb"
-      next if packagecloud.exists? dist, filename
-      to_build << p([dist, platform, version])
-    end
-  end
-end
-
-puts "#{to_build.size} versions to build"
-
-Array.new(10) do
-  Thread.new do
-    loop do
-      dist, platform, version = to_build.pop || break
-      system("depot", "build",
-             "--platform", "linux/#{platform}",
-             "--build-arg", "erlang_version=#{version}",
-             "--build-arg", "image=#{dist.sub('/', ':')}",
-             "--output", ".",
-             ".", exception: true)
-      File.open("esl-erlang_#{version}-1_#{platform}.deb") do |file|
-        packagecloud.upload(dist, file)
-        File.unlink(file)
+  to_build = []
+  github.releases do |r|
+    next if r["prerelease"]
+    next if r["draft"]
+    version = r["tag_name"].sub("OTP-", "")
+    DISTS.each do |dist|
+      PLATFORMS.each do |platform|
+        filename = "esl-erlang_#{version}-1_#{platform}.deb"
+        next if packagecloud.exists? dist, filename
+        image = dist.sub("/", ":")
+        to_build << { image:, platform:, version: }
       end
     end
   end
-end.each(&:join)
+  # Output for Github Action
+  print "matrix="
+  JSON.dump(to_build, $stdout)
+when "build-and-upload"
+  dist, platform, version = ARGV.shift(3)
+  system("depot", "build",
+         "--platform", "linux/#{platform}",
+         "--build-arg", "erlang_version=#{version}",
+         "--build-arg", "image=#{dist.sub('/', ':')}",
+         "--output", ".",
+         ".", exception: true)
+  File.open("esl-erlang_#{version}-1_#{platform}.deb") do |file|
+    packagecloud.upload(dist, file)
+    File.unlink(file)
+  end
+else
+  abort "#{File.basename $PROGRAM_NAME} [ missing-versions | build-and-upload <dist> <platform> <version> ]"
+end
