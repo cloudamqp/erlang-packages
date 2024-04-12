@@ -16,9 +16,9 @@ jobs:
           ruby-version: ruby
       - name: Check missing versions
         id: missing-versions
-        run: bin/build-all-and-upload missing-versions >> "$GITHUB_OUTPUT"
+        run: echo "matrix=$(bin/missing-versions)" >> "$GITHUB_OUTPUT"
         env:
-          GITHUB_TOKEN_PUBLIC_ACCESS: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PACKAGECLOUD_TOKEN: ${{ secrets.PACKAGECLOUD_TOKEN }}
     outputs:
       matrix: ${{ steps.missing-versions.outputs.matrix }}
@@ -30,6 +30,7 @@ jobs:
       max-parallel: 10
       matrix:
         include: ${{ fromJson(needs.missing-versions.outputs.matrix) }}
+      fail-fast: false
     permissions:
       contents: read
       id-token: write
@@ -39,10 +40,7 @@ jobs:
         with:
           ruby-version: ruby
       - uses: depot/use-action@v1
-        with:
-          project: srqn8st7l7
-      - name: Build all versions of Erlang and upload to PackageCloud
+      - name: Build Erlang version and upload to PackageCloud
         env:
-          GITHUB_TOKEN_PUBLIC_ACCESS: ${{ secrets.GITHUB_TOKEN }}
           PACKAGECLOUD_TOKEN: ${{ secrets.PACKAGECLOUD_TOKEN }}
-        run : bin/build-all-and-upload build-and-upload ${{ matrix.image }} ${{ matrix.platform }} ${{ matrix.version }}
+        run : bin/build-and-upload ${{ matrix.image }} ${{ matrix.platform }} ${{ matrix.version }}

@@ -1,22 +1,5 @@
-#!/usr/bin/env ruby
 require "net/http"
 require "json"
-
-class Github
-  def initialize(token = ENV.fetch("GITHUB_TOKEN_PUBLIC_ACCESS"))
-    @auth = { Authorization: "Bearer #{token}" }
-  end
-
-  def releases(&blk)
-    Net::HTTP.start("api.github.com", use_ssl: true) do |api|
-      1.upto(10).each do |page|
-        resp = api.get("/repos/erlang/otp/releases?per_page=100&&page=#{page}", @auth)
-        raise "Unexpected response: #{resp} #{resp.body}" unless Net::HTTPOK === resp
-        JSON.parse(resp.body).each(&blk)
-      end
-    end
-  end
-end
 
 class Packagecloud
   def initialize(token = ENV.fetch("PACKAGECLOUD_TOKEN"))
@@ -87,47 +70,4 @@ class Packagecloud
   end
 end
 
-packagecloud = Packagecloud.new
-github = Github.new
 
-case ARGV.shift
-when "missing-versions"
-  DISTS = %w[ubuntu/jammy ubuntu/focal].freeze
-  PLATFORMS = %w[amd64 arm64].freeze
-
-  to_build = []
-  github.releases do |r|
-    next if r["prerelease"]
-    next if r["draft"]
-    version = r["tag_name"].sub("OTP-", "")
-    DISTS.each do |dist|
-      PLATFORMS.each do |platform|
-        filename = "esl-erlang_#{version}-1_#{platform}.deb"
-        next if packagecloud.exists? dist, filename
-        image = dist.sub("/", ":")
-        to_build << { image:, platform:, version: }
-      end
-    end
-  end
-  # Output for Github Action
-  print "matrix="
-  JSON.dump(to_build.take(256), $stdout)
-  warn "Result truncated to 256, actual missing versions: #{to_build.size}" if to_build.size > 256
-when "build-and-upload"
-  if ARGV.size != 3
-    abort "#{File.basename $PROGRAM_NAME} build-and-upload <dist> <platform> <version>"
-  end
-  dist, platform, version = ARGV.shift(3)
-  system("depot", "build",
-         "--platform", "linux/#{platform}",
-         "--build-arg", "erlang_version=#{version}",
-         "--build-arg", "image=#{dist.sub('/', ':')}",
-         "--output", ".",
-         ".", exception: true)
-  File.open("esl-erlang_#{version}-1_#{platform}.deb") do |file|
-    packagecloud.upload(dist, file)
-    File.unlink(file)
-  end
-else
-  abort "#{File.basename $PROGRAM_NAME} [ missing-versions | build-and-upload <dist> <platform> <version> ]"
-end

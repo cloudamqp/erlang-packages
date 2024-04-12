@@ -1,0 +1,31 @@
+#!/usr/bin/env ruby
+require_relative "../lib/github"
+require_relative "../lib/packagecloud"
+
+DISTS = %w[ubuntu/jammy ubuntu/focal].freeze
+PLATFORMS = %w[amd64 arm64].freeze
+
+packagecloud = Packagecloud.new
+github = Github.new
+
+missing = []
+github.releases do |r|
+  next if r["prerelease"]
+  next if r["draft"]
+  next if r["tag_name"].include? "rc-"
+  version = r["tag_name"].sub("OTP-", "")
+  DISTS.each do |dist|
+    PLATFORMS.each do |platform|
+      filename = "esl-erlang_#{version}-1_#{platform}.deb"
+      next if packagecloud.exists? dist, filename
+      image = dist.sub("/", ":")
+      missing << { image:, platform:, version: }
+    end
+  end
+end
+
+# Output for Github Action
+JSON.dump(missing.take(256), $stdout)
+
+# Github Actions support maximum 256 jobs
+warn "Result truncated to 256, actual missing versions: #{to_build.size}" if to_build.size > 256
