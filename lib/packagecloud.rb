@@ -7,7 +7,6 @@ class Packagecloud
     @token = token
     @packages = packages
     @distributions = distributions
-    @lock = Mutex.new
   end
 
   def exists?(dist_name, name)
@@ -22,7 +21,7 @@ class Packagecloud
     form_data = [["package[distro_version_id]", dist_id(dist_name).to_s],
                  ["package[package_file]", file]]
     request.set_form form_data, "multipart/form-data"
-    response = @lock.synchronize { @http.request(request) }
+    response = @http.request(request)
     case response
     when Net::HTTPCreated
       package = JSON.parse(response.body)
