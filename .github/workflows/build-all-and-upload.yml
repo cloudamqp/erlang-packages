@@ -15,10 +15,13 @@ jobs:
         with:
           ruby-version: ruby
       - name: Check missing versions
+        id: missing-versions
         run: bin/build-all-and-upload missing-versions >> "$GITHUB_OUTPUT"
         env:
           GITHUB_TOKEN_PUBLIC_ACCESS: ${{ secrets.GITHUB_TOKEN }}
           PACKAGECLOUD_TOKEN: ${{ secrets.PACKAGECLOUD_TOKEN }}
+    outputs:
+      matrix: ${{ steps.missing-versions.outputs.matrix }}
 
   build-and-upload:
     needs: missing-versions
