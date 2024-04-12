@@ -5,7 +5,12 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '30 8 * * 1-5' # 08:30 mon-fri
-
+  push:
+    branches:
+      - main
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
 jobs:
   missing-versions:
     runs-on: ubuntu-latest
