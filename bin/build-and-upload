@@ -2,10 +2,10 @@
 require_relative "../lib/packagecloud"
 
 if ARGV.size != 3
-  abort "#{File.basename $PROGRAM_NAME} build-and-upload <dist> <platform> <version>"
+  abort "#{File.basename $PROGRAM_NAME} build-and-upload <version> <dist> <platform>"
 end
 
-image, platform, version = ARGV.shift(3)
+version, image, platform = ARGV.shift(3)
 system("depot", "build",
        "--platform", "linux/#{platform}",
        "--build-arg", "erlang_version=#{version}",

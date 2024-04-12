@@ -19,7 +19,7 @@ github.releases do |r|
       filename = "esl-erlang_#{version}-1_#{platform}.deb"
       next if packagecloud.exists? dist, filename
       image = dist.sub("/", ":")
-      missing << { image:, platform:, version: }
+      missing << { version:, image:, platform: }
     end
   end
 end

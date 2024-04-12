@@ -43,4 +43,4 @@ jobs:
       - name: Build Erlang version and upload to PackageCloud
         env:
           PACKAGECLOUD_TOKEN: ${{ secrets.PACKAGECLOUD_TOKEN }}
-        run : bin/build-and-upload ${{ matrix.image }} ${{ matrix.platform }} ${{ matrix.version }}
+        run : bin/build-and-upload ${{ matrix.version }} ${{ matrix.image }} ${{ matrix.platform }}
