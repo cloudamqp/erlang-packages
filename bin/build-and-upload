@@ -2,19 +2,19 @@
 require_relative "../lib/packagecloud"
 
 if ARGV.size != 3
-  abort "#{File.basename $PROGRAM_NAME} build-and-upload <version> <dist> <platform>"
+  abort "#{File.basename $PROGRAM_NAME} build-and-upload <version> <image> <platform>"
 end
 
 version, image, platform = ARGV.shift(3)
 system("depot", "build",
        "--platform", "linux/#{platform}",
        "--build-arg", "erlang_version=#{version}",
-       "--build-arg", "image=#{image}",
+       "--build-arg", "image=#{image.sub('/', ':')}",
        "--output", ".",
        ".", exception: true)
 
 packagecloud = Packagecloud.new
 File.open("esl-erlang_#{version}-1_#{platform}.deb") do |file|
-  packagecloud.upload(dist, file)
+  packagecloud.upload(image.sub(":", "/"), file)
   File.unlink(file)
 end
