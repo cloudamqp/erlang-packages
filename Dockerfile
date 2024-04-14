@@ -3,7 +3,7 @@ FROM ${image} AS builder
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update
 
-RUN apt-get install -y curl build-essential pkg-config ruby binutils autoconf libwxbase3.0-dev \
+RUN apt-get install -y curl build-essential pkg-config ruby binutils autoconf \
                        libssl-dev libtinfo-dev zlib1g-dev libsnmp-dev && \
     (ruby -e "exit RUBY_VERSION.to_f > 2.5" || gem install --no-document public_suffix -v 4.0.7) && \
     (ruby -e "exit RUBY_VERSION.to_f >= 3.0" || gem install --no-document dotenv -v 2.8.1 ) && \
