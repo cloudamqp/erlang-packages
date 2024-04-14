@@ -2,7 +2,7 @@
 require_relative "../lib/github"
 require_relative "../lib/packagecloud"
 
-DISTS = %w[ubuntu/jammy ubuntu/focal].freeze
+DISTS = %w[ubuntu/jammy ubuntu/focal debian/bookworm].freeze
 PLATFORMS = %w[amd64 arm64].freeze
 
 packagecloud = Packagecloud.new
@@ -23,9 +23,9 @@ github.releases do |r|
     end
   end
 end
-
+missing.sort_by! { |v| v[:version] }
 # Output for Github Action
 JSON.dump(missing.take(256), $stdout)
 
 # Github Actions support maximum 256 jobs
-warn "Result truncated to 256, actual missing versions: #{to_build.size}" if to_build.size > 256
+warn "Result truncated to 256, actual missing versions: #{missing.size}" if missing.size > 256
