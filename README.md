@@ -13,7 +13,7 @@ Excluded erlang packages:
 
 ## Versions
 
-Every [version of Erlang that is released on GitHub](https://github.com/erlang/otp/releases) is built, currently for Ubuntu 20.03 and 22.04.
+Every [version of Erlang that is released on GitHub](https://github.com/erlang/otp/releases) is built, currently for Ubuntu 20.04 and 22.04.
 
 ## Install
 
