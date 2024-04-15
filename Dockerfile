@@ -30,7 +30,7 @@ WORKDIR /tmp/erlang
 RUN curl -fL https://api.github.com/repos/erlang/otp/tarball/refs/tags/OTP-${erlang_version} | tar zx --strip-components=1
 
 # erlang before 24.1 requires gcc-9 and autoconf-2.69
-RUN if (grep -q jammy /etc/os-release && dpkg --compare-versions "$erlang_version" lt 24.1); then \
+RUN if (grep -q -e jammy -e bullseye /etc/os-release && dpkg --compare-versions "$erlang_version" lt 24.1); then \
         apt-get install -y gcc-9 autoconf2.69 && \
         ln -sf /usr/bin/gcc-9 /usr/bin/gcc && \
         ln -sf /usr/bin/autoconf2.69 /usr/bin/autoconf; \
