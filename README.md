@@ -52,4 +52,4 @@ To test if a erlang version builds well you can use the `tester` stage in the [D
 podman build --target tester --build-arg image=ubuntu:jammy --build-arg erlang_version=26.0 --build-arg rabbitmq_version=3.13.0 .
 ```
 
-https://depot.dev/ is used for building multiplaform images on native hardware, the Dockerfile used to be crosscompiling, but not anymore as it increases complexity.
+https://depot.dev/ is used for building multi-plaform images on native hardware, the Dockerfile used to be crosscompiling, but not anymore as it increases complexity.
