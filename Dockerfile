@@ -14,7 +14,7 @@ ARG erlang_version=24.0
 # Erlang before 24.2 didn't support libssl3, so statically compile 1.1.1 if no available from the OS
 RUN libssl_version=$(dpkg-query --showformat='${Version}' --show libssl-dev); \
     if (dpkg --compare-versions "$erlang_version" ge 20.0 && dpkg --compare-versions "$erlang_version" lt 24.2 && dpkg --compare-versions "$libssl_version" ge 3.0.0); then \
-        curl https://www.openssl.org/source/openssl-1.1.1t.tar.gz | tar zx --strip-components=1 && \
+        curl -L https://github.com/openssl/openssl/releases/download/OpenSSL_1_1_1w/openssl-1.1.1w.tar.gz | tar zx --strip-components=1 && \
         ./config no-shared && \
         make -j$(nproc) && make install_sw; \
     fi
