@@ -89,7 +89,7 @@ RUN fpm -s dir -t deb \
 #RUN lintian *erlang*.deb || true
 
 ARG TARGETPLATFORM
-FROM --platform=$TARGETPLATFORM ${image} as tester
+FROM --platform=$TARGETPLATFORM ${image} AS tester
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y curl
 ARG rabbitmq_version=3.7.10
