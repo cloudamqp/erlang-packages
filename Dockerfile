@@ -30,7 +30,7 @@ WORKDIR /tmp/erlang
 RUN curl -fL https://api.github.com/repos/erlang/otp/tarball/refs/tags/OTP-${erlang_version} | tar zx --strip-components=1
 
 # erlang before 24.1 requires gcc-9 and autoconf-2.69
-RUN if (grep -q -e jammy -e bullseye /etc/os-release && dpkg --compare-versions "$erlang_version" lt 24.1); then \
+RUN if (grep -q -e noble -e jammy -e bullseye /etc/os-release && dpkg --compare-versions "$erlang_version" lt 24.1); then \
         apt-get install -y gcc-9 autoconf2.69 && \
         ln -sf /usr/bin/gcc-9 /usr/bin/gcc && \
         ln -sf /usr/bin/autoconf2.69 /usr/bin/autoconf; \
@@ -69,7 +69,10 @@ RUN libssl_version=$(dpkg-query --showformat='${Version}' --show libssl-dev); \
 # when cross compiling the target version of strip is required
 
 ARG erlang_iteration=1
-RUN fpm -s dir -t deb \
+RUN mkdir debian && touch debian/control; \
+    DEPS=$(dpkg-shlibdeps -O -e $(find /tmp/install/usr -name beam.smp) 2> /dev/null); \
+    SHLIBS_PREFIX="shlibs:Depends="; \
+    fpm -s dir -t deb \
     --chdir /tmp/install \
     --name esl-erlang \
     --version $erlang_version \
@@ -81,7 +84,7 @@ RUN fpm -s dir -t deb \
     --url "https://erlang.org" \
     --license "Apache 2.0" \
     --depends "procps" \
-    --depends "$(readelf -d $(find /tmp/install/usr -name beam.smp) | awk '/NEEDED/{gsub(/[\[\]]/, "");print $5}' | xargs dpkg -S | cut -d: -f1 | sort -u | paste -sd,)" \
+    --depends "${DEPS#$SHLIBS_PREFIX}" \
     --conflicts "erlang-asn1,erlang-base,erlang-base-hipe,erlang-common-test,erlang-corba,erlang-crypto,erlang-debugger,erlang-dev,erlang-dialyzer,erlang-diameter,erlang-doc,erlang-edoc,erlang-eldap,erlang-erl-docgen,erlang-et,erlang-eunit,erlang-examples,erlang-ftp,erlang-ic,erlang-ic-java,erlang-inets,erlang-inviso,erlang-jinterface,erlang-manpages,erlang-megaco,erlang-mnesia,erlang-mode,erlang-nox,erlang-observer,erlang-odbc,erlang-os-mon,erlang-parsetools,erlang-percept,erlang-public-key,erlang-reltool,erlang-runtime-tools,erlang-snmp,erlang-src,erlang-ssh,erlang-ssl,erlang-syntax-tools,erlang-tftp,erlang-tools,erlang-webtool,erlang-wx,erlang-xmerl"
 
 #RUN apt-get install -y lintian
