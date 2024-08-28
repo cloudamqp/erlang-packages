@@ -12,30 +12,25 @@ concurrency:
   group: ${{ github.workflow }}
   cancel-in-progress: true
 jobs:
-  missing-versions:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: ruby
-      - name: Check missing versions
-        id: missing-versions
-        run: echo "matrix=$(bin/missing-versions)" >> "$GITHUB_OUTPUT"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PACKAGECLOUD_TOKEN: ${{ secrets.PACKAGECLOUD_TOKEN }}
-    outputs:
-      matrix: ${{ steps.missing-versions.outputs.matrix }}
-
   build-and-upload:
-    needs: missing-versions
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 10
+      max-parallel: 1
       matrix:
-        include: ${{ fromJson(needs.missing-versions.outputs.matrix) }}
-      fail-fast: false
+        image:
+          - "ubuntu:noble"
+        version:
+          - "18.0"
+          - "18.1"
+          - "18.2"
+          - "18.3"
+          - "19.3.6.13"
+          - "20.0.5"
+          - "20.1.7.1"
+          - "20.3.8.22"
+          - "20.3.8.26"
+        platform: [amd64, arm64]
+      fail-fast: true
     permissions:
       contents: read
       id-token: write
