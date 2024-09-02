@@ -30,6 +30,7 @@ jobs:
 
   build-and-upload:
     needs: missing-versions
+    if: ${{ needs.missing-versions.outputs.matrix != '[]' }}
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 10
