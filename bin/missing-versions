@@ -7,6 +7,14 @@ PLATFORMS = %w[amd64 arm64].freeze
 # 24.2 supports OpenSSL 3 and modern gcc/autoconf versions
 FIRST_SANE_VERSION = Gem::Version.new("24.2")
 
+def skip_release?(dist:, version:)
+  return true if version == "patch-base-26"
+  # Debian Bookworm doesn't have gcc 9 which is required for erlang <24.2
+  return true if dist == "debian/bookworm" && Gem::Version.new(version) < FIRST_SANE_VERSION
+
+  false
+end
+
 packagecloud = Packagecloud.new
 github = Github.new
 
@@ -17,8 +25,7 @@ github.releases do |r|
   next if r["tag_name"].include? "-rc"
   version = r["tag_name"].sub("OTP-", "")
   DISTS.each do |dist|
-    # Debian Bookworm doesn't have gcc 9 which is required for erlang <24.2
-    next if dist == "debian/bookworm" && Gem::Version.new(version) < FIRST_SANE_VERSION
+    next if skip_release?(dist:, version:)
     PLATFORMS.each do |platform|
       filename = "esl-erlang_#{version}-1_#{platform}.deb"
       next if packagecloud.exists? dist, filename
