@@ -21,7 +21,9 @@ jobs:
           ruby-version: ruby
       - name: Check missing versions
         id: missing-versions
-        run: echo "matrix=$(bin/missing-versions)" >> "$GITHUB_OUTPUT"
+        run: |
+          missing_versions=$(bin/missing-versions)
+          echo "matrix=$missing_versions" >> "$GITHUB_OUTPUT"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PACKAGECLOUD_TOKEN: ${{ secrets.PACKAGECLOUD_TOKEN }}
