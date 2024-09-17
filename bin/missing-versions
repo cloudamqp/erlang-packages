@@ -15,6 +15,7 @@ github.releases do |r|
   next if r["prerelease"]
   next if r["draft"]
   next if r["tag_name"].include? "-rc"
+  next unless r["tag_name"].start_with?("OTP-")
   version = r["tag_name"].sub("OTP-", "")
   DISTS.each do |dist|
     # Debian Bookworm doesn't have gcc 9 which is required for erlang <24.2
