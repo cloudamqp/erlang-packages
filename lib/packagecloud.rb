@@ -45,7 +45,7 @@ class Packagecloud
 
   def packages
     packages = []
-    1.upto(10) do |page|
+    (1..).each do |page|
       path = "/api/v1/repos/cloudamqp/erlang/packages.json?per_page=250&page=#{page}"
       request = Net::HTTP::Get.new(path)
       request.basic_auth(@token, "")
@@ -68,5 +68,3 @@ class Packagecloud
     JSON.parse resp.body
   end
 end
-
-
