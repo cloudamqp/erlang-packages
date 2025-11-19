@@ -2,7 +2,7 @@
 
 CloudAMQP built erlang debian packages. Named `esl-erlang` for compability with `rabbitmq-server` which depends on esl-erlang (or erlang-base, but the multi-package approach is difficult).
 
-Building is done in [Dockerfile](./Dockerfile) and [GitHub Action](.github/workflows/build-all-and-upload.yml) uploads the packages to to PackageCloud.
+Building is done in [Dockerfile](./Dockerfile) and [GitHub Action](.github/workflows/build-all-and-upload.yml) uploads the packages to PackageCloud.
 
 Excluded erlang packages:
 
@@ -14,6 +14,10 @@ Excluded erlang packages:
 ## Versions
 
 Every [version of Erlang that is released on GitHub](https://github.com/erlang/otp/releases) is built, currently for Ubuntu 20.04, 22.04 and 24.04.
+
+## Caveat
+
+GitHub disables the scheduled workflow if there hasn't been activity in this repository for at least 60 days. Need to manually enable the workflow to resume scheduled runs.
 
 ## Install
 
