@@ -2,10 +2,11 @@
 require_relative "../lib/github"
 require_relative "../lib/packagecloud"
 
-DISTS = %w[ubuntu/noble ubuntu/jammy ubuntu/focal debian/bookworm debian/bullseye].freeze
+DISTS = %w[ubuntu/resolute ubuntu/noble ubuntu/jammy debian/bookworm debian/bullseye].freeze
 PLATFORMS = %w[amd64 arm64].freeze
 # 24.2 supports OpenSSL 3 and modern gcc/autoconf versions
 FIRST_SANE_VERSION = Gem::Version.new("24.2")
+MIN_VERSION = Gem::Version.new("22.0")
 
 packagecloud = Packagecloud.new
 github = Github.new
@@ -17,6 +18,7 @@ github.releases do |r|
   next if r["tag_name"].include? "-rc"
   next unless r["tag_name"].start_with?("OTP-")
   version = r["tag_name"].sub("OTP-", "")
+  next if Gem::Version.new(version) < MIN_VERSION
   DISTS.each do |dist|
     # Debian Bookworm doesn't have gcc 9 which is required for erlang <24.2
     next if dist == "debian/bookworm" && Gem::Version.new(version) < FIRST_SANE_VERSION
