@@ -13,18 +13,25 @@ ARG erlang_version=24.2
 WORKDIR /tmp/erlang
 RUN curl -fL https://api.github.com/repos/erlang/otp/tarball/refs/tags/OTP-${erlang_version} | tar zx --strip-components=1
 
-ARG CFLAGS="-g -O2 -fdebug-prefix-map=/=. -fstack-protector-strong -Wformat -Werror=format-security"
+# gcc 15+ defaults to C23, where bool/true/false are reserved keywords; older
+# Erlang uses them as identifiers, so pin the C standard to gnu17
+ARG CFLAGS="-std=gnu17 -g -O2 -fdebug-prefix-map=/=. -fstack-protector-strong -Wformat -Werror=format-security"
 ARG CPPFLAGS="-Wdate-time -D_FORTIFY_SOURCE=2"
 ARG LDFLAGS="-Wl,-Bsymbolic-functions -Wl,-z,relro"
 ARG ERLC_USE_SERVER=false
 RUN ./otp_build autoconf
-RUN ./configure erl_xcomp_sysroot=/ \
+# Erlang's JIT before 25.3 generates code that segfaults on resolute's newer
+# kernel/glibc; fall back to the interpreter there. Other distros and 25.3+
+# keep the JIT.
+RUN disable_jit=$(grep -q resolute /etc/os-release && dpkg --compare-versions "$erlang_version" lt 25.3 && echo --disable-jit); \
+    ./configure erl_xcomp_sysroot=/ \
                 --prefix=/usr \
                 --enable-kernel-poll \
                 --enable-shared-zlib \
                 --disable-builtin-zlib \
                 --disable-sctp \
                 --disable-hipe \
+                $disable_jit \
                 --without-java \
                 --without-odbc \
                 --without-megaco \
