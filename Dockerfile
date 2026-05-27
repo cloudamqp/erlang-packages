@@ -9,40 +9,21 @@ RUN apt-get install -y curl build-essential pkg-config ruby binutils autoconf \
     (ruby -e "exit RUBY_VERSION.to_f >= 3.0" || gem install --no-document dotenv -v 2.8.1 ) && \
     gem install --no-document fpm
 
-WORKDIR /tmp/openssl
-ARG erlang_version=24.0
-# Erlang before 24.2 didn't support libssl3, so statically compile 1.1.1 if no available from the OS
-RUN libssl_version=$(dpkg-query --showformat='${Version}' --show libssl-dev); \
-    if (dpkg --compare-versions "$erlang_version" ge 20.0 && dpkg --compare-versions "$erlang_version" lt 24.2 && dpkg --compare-versions "$libssl_version" ge 3.0.0); then \
-        curl -L https://github.com/openssl/openssl/releases/download/OpenSSL_1_1_1w/openssl-1.1.1w.tar.gz | tar zx --strip-components=1 && \
-        ./config no-shared && \
-        make -j$(nproc) && make install_sw; \
-    fi
-
-# Erlang before 20.0 didn't support libssl1.1, so statically compile 1.0.2
-RUN if (dpkg --compare-versions "$erlang_version" lt 20.0); then \
-        curl https://www.openssl.org/source/old/1.0.2/openssl-1.0.2u.tar.gz | tar zx --strip-components=1 && \
-        ./config --prefix=/usr/local --openssldir=/usr/local/ssl no-shared -fPIC && \
-        make -j$(nproc) && make install_sw; \
-    fi
-
+ARG erlang_version=24.2
 WORKDIR /tmp/erlang
 RUN curl -fL https://api.github.com/repos/erlang/otp/tarball/refs/tags/OTP-${erlang_version} | tar zx --strip-components=1
 
-# erlang before 24.1 requires gcc-9 and autoconf-2.69
-RUN if (grep -q -e noble -e jammy -e bullseye /etc/os-release && dpkg --compare-versions "$erlang_version" lt 24.1); then \
-        apt-get install -y gcc-9 autoconf2.69 && \
-        ln -sf /usr/bin/gcc-9 /usr/bin/gcc && \
-        ln -sf /usr/bin/autoconf2.69 /usr/bin/autoconf; \
-    fi
-
-ARG CFLAGS="-g -O2 -fdebug-prefix-map=/=. -fstack-protector-strong -Wformat -Werror=format-security"
+# gcc 15+ defaults to C23, where bool/true/false are reserved keywords; older
+# Erlang uses them as identifiers, so pin the C standard to gnu17
+ARG CFLAGS="-std=gnu17 -g -O2 -fdebug-prefix-map=/=. -fstack-protector-strong -Wformat -Werror=format-security"
 ARG CPPFLAGS="-Wdate-time -D_FORTIFY_SOURCE=2"
 ARG LDFLAGS="-Wl,-Bsymbolic-functions -Wl,-z,relro"
 ARG ERLC_USE_SERVER=false
 RUN ./otp_build autoconf
-RUN libssl_version=$(dpkg-query --showformat='${Version}' --show libssl-dev); \
-    STATIC_OPENSSL=$(dpkg --compare-versions "$erlang_version" lt 20 || (dpkg --compare-versions "$erlang_version" lt 24.2 && dpkg --compare-versions "$libssl_version" ge 3) && echo y); \
+# Erlang's JIT before 25.3 generates code that segfaults on resolute's newer
+# kernel/glibc; fall back to the interpreter there. Other distros and 25.3+
+# keep the JIT.
+RUN disable_jit=$(grep -q resolute /etc/os-release && dpkg --compare-versions "$erlang_version" lt 25.3 && echo --disable-jit); \
     ./configure erl_xcomp_sysroot=/ \
                 --prefix=/usr \
                 --enable-kernel-poll \
@@ -50,6 +31,7 @@ RUN libssl_version=$(dpkg-query --showformat='${Version}' --show libssl-dev); \
                 --disable-builtin-zlib \
                 --disable-sctp \
                 --disable-hipe \
+                $disable_jit \
                 --without-java \
                 --without-odbc \
                 --without-megaco \
@@ -61,7 +43,7 @@ RUN libssl_version=$(dpkg-query --showformat='${Version}' --show libssl-dev); \
                 --without-eunit \
                 --with-ssl-rpath=no \
                 --with-ssl \
-                $([ "$STATIC_OPENSSL" = y ] && echo "--with-ssl=/usr/local --disable-dynamic-ssl-lib" || echo --enable-dynamic-ssl-lib) && \
+                --enable-dynamic-ssl-lib && \
     make -j$(nproc) && \
     make install DESTDIR=/tmp/install && \
     find /tmp/install -type d -name examples | xargs rm -r && \
