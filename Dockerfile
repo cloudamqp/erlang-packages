@@ -13,16 +13,9 @@ WORKDIR /tmp/openssl
 ARG erlang_version=24.0
 # Erlang before 24.2 didn't support libssl3, so statically compile 1.1.1 if no available from the OS
 RUN libssl_version=$(dpkg-query --showformat='${Version}' --show libssl-dev); \
-    if (dpkg --compare-versions "$erlang_version" ge 20.0 && dpkg --compare-versions "$erlang_version" lt 24.2 && dpkg --compare-versions "$libssl_version" ge 3.0.0); then \
+    if (dpkg --compare-versions "$erlang_version" lt 24.2 && dpkg --compare-versions "$libssl_version" ge 3.0.0); then \
         curl -L https://github.com/openssl/openssl/releases/download/OpenSSL_1_1_1w/openssl-1.1.1w.tar.gz | tar zx --strip-components=1 && \
         ./config no-shared && \
-        make -j$(nproc) && make install_sw; \
-    fi
-
-# Erlang before 20.0 didn't support libssl1.1, so statically compile 1.0.2
-RUN if (dpkg --compare-versions "$erlang_version" lt 20.0); then \
-        curl https://www.openssl.org/source/old/1.0.2/openssl-1.0.2u.tar.gz | tar zx --strip-components=1 && \
-        ./config --prefix=/usr/local --openssldir=/usr/local/ssl no-shared -fPIC && \
         make -j$(nproc) && make install_sw; \
     fi
 
@@ -42,7 +35,7 @@ ARG LDFLAGS="-Wl,-Bsymbolic-functions -Wl,-z,relro"
 ARG ERLC_USE_SERVER=false
 RUN ./otp_build autoconf
 RUN libssl_version=$(dpkg-query --showformat='${Version}' --show libssl-dev); \
-    STATIC_OPENSSL=$(dpkg --compare-versions "$erlang_version" lt 20 || (dpkg --compare-versions "$erlang_version" lt 24.2 && dpkg --compare-versions "$libssl_version" ge 3) && echo y); \
+    STATIC_OPENSSL=$(dpkg --compare-versions "$erlang_version" lt 24.2 && dpkg --compare-versions "$libssl_version" ge 3 && echo y); \
     ./configure erl_xcomp_sysroot=/ \
                 --prefix=/usr \
                 --enable-kernel-poll \
