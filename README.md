@@ -13,7 +13,7 @@ Excluded erlang packages:
 
 ## Versions
 
-Every [version of Erlang ≥ 24 that is released on GitHub](https://github.com/erlang/otp/releases) is built, currently for Ubuntu 22.04, 24.04 and 26.04.
+Every [version of Erlang ≥ 24.2 that is released on GitHub](https://github.com/erlang/otp/releases) is built, currently for Ubuntu 22.04, 24.04 and 26.04.
 
 ## Caveat
 
