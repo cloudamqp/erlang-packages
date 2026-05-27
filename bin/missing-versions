@@ -6,7 +6,7 @@ DISTS = %w[ubuntu/resolute ubuntu/noble ubuntu/jammy debian/bookworm debian/bull
 PLATFORMS = %w[amd64 arm64].freeze
 # 24.2 supports OpenSSL 3 and modern gcc/autoconf versions
 FIRST_SANE_VERSION = Gem::Version.new("24.2")
-MIN_VERSION = Gem::Version.new("22.0")
+MIN_VERSION = Gem::Version.new("24.0")
 
 packagecloud = Packagecloud.new
 github = Github.new
@@ -20,8 +20,8 @@ github.releases do |r|
   version = r["tag_name"].sub("OTP-", "")
   next if Gem::Version.new(version) < MIN_VERSION
   DISTS.each do |dist|
-    # Debian Bookworm doesn't have gcc 9 which is required for erlang <24.2
-    next if dist == "debian/bookworm" && Gem::Version.new(version) < FIRST_SANE_VERSION
+    # Debian Bookworm and Ubuntu Resolute don't have gcc 9 which is required for erlang <24.2
+    next if %w[debian/bookworm ubuntu/resolute].include?(dist) && Gem::Version.new(version) < FIRST_SANE_VERSION
     PLATFORMS.each do |platform|
       filename = "esl-erlang_#{version}-1_#{platform}.deb"
       next if packagecloud.exists? dist, filename
