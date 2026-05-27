@@ -13,6 +13,9 @@ system("depot", "build",
        "--output", ".",
        ".", exception: true)
 
+# On pull requests we build to validate changes but don't publish
+exit if ENV["UPLOAD"] == "false"
+
 packagecloud = Packagecloud.new
 File.open("esl-erlang_#{version}-1_#{platform}.deb") do |file|
   packagecloud.upload(image.sub(":", "/"), file)
