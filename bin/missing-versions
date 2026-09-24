@@ -2,7 +2,7 @@
 require_relative "../lib/github"
 require_relative "../lib/packagecloud"
 
-DISTS = %w[ubuntu/resolute ubuntu/noble ubuntu/jammy debian/bookworm debian/bullseye].freeze
+DISTS = %w[ubuntu/resolute ubuntu/noble ubuntu/jammy debian/bookworm].freeze
 PLATFORMS = %w[amd64 arm64].freeze
 # 24.2 is the first version that builds against modern OpenSSL 3 and gcc/autoconf,
 # without needing a statically-compiled OpenSSL or a pinned old toolchain
