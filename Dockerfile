@@ -28,7 +28,6 @@ RUN disable_jit=$(grep -q resolute /etc/os-release && dpkg --compare-versions "$
                 --enable-shared-zlib \
                 --disable-builtin-zlib \
                 --disable-sctp \
-                --disable-hipe \
                 $disable_jit \
                 --without-java \
                 --without-odbc \
