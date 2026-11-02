@@ -21,8 +21,17 @@ RUN ./otp_build autoconf
 # Erlang's JIT before 25.3 generates code that segfaults on resolute's newer
 # kernel/glibc; fall back to the interpreter there. Other distros and 25.3+
 # keep the JIT.
+# gcc 14+ rejects the implicit int and implicit declarations that older OTP
+# configure tests use (e.g. "working poll()"), so those tests fail silently.
+# -fpermissive restores gcc 13 behaviour; older gcc errors on it under -Werror.
 RUN disable_jit=$(grep -q resolute /etc/os-release && dpkg --compare-versions "$erlang_version" lt 25.3 && echo --disable-jit); \
-    ./configure erl_xcomp_sysroot=/ \
+    permissive=$([ "$(gcc -dumpversion | cut -d. -f1)" -ge 14 ] && \
+                 { dpkg --compare-versions "$erlang_version" lt 26.2.5.7 || \
+                   { dpkg --compare-versions "$erlang_version" ge 27 && \
+                     dpkg --compare-versions "$erlang_version" lt 27.2.1; }; } && \
+                 echo -fpermissive); \
+    ./configure CFLAGS="$CFLAGS $permissive" \
+                erl_xcomp_sysroot=/ \
                 --prefix=/usr \
                 --enable-kernel-poll \
                 --enable-shared-zlib \
@@ -46,6 +55,9 @@ RUN disable_jit=$(grep -q resolute /etc/os-release && dpkg --compare-versions "$
     find /tmp/install -type d -name examples | xargs rm -r && \
     find /tmp/install -type f -executable -exec strip {} \;;
 # when cross compiling the target version of strip is required
+
+# RabbitMQ reads max_fds from the fallback poller; select() caps it at 1024
+RUN ./bin/erl -noshell -eval 'poll = proplists:get_value(primary, hd(erlang:system_info(check_io))), init:stop().'
 
 ARG erlang_iteration=1
 RUN mkdir debian && touch debian/control; \
