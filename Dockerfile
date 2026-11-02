@@ -25,7 +25,11 @@ RUN ./otp_build autoconf
 # configure tests use (e.g. "working poll()"), so those tests fail silently.
 # -fpermissive restores gcc 13 behaviour; older gcc errors on it under -Werror.
 RUN disable_jit=$(grep -q resolute /etc/os-release && dpkg --compare-versions "$erlang_version" lt 25.3 && echo --disable-jit); \
-    permissive=$([ "$(gcc -dumpversion | cut -d. -f1)" -ge 14 ] && echo -fpermissive); \
+    permissive=$([ "$(gcc -dumpversion | cut -d. -f1)" -ge 14 ] && \
+                 { dpkg --compare-versions "$erlang_version" lt 26.2.5.7 || \
+                   { dpkg --compare-versions "$erlang_version" ge 27 && \
+                     dpkg --compare-versions "$erlang_version" lt 27.2.1; }; } && \
+                 echo -fpermissive); \
     ./configure CFLAGS="$CFLAGS $permissive" \
                 erl_xcomp_sysroot=/ \
                 --prefix=/usr \
