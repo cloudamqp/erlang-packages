@@ -81,9 +81,8 @@ ARG TARGETPLATFORM
 FROM --platform=$TARGETPLATFORM ${image} AS tester
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y curl
-ARG rabbitmq_version=3.7.10
-RUN curl -fLO https://github.com/rabbitmq/rabbitmq-server/releases/download/v${rabbitmq_version}/rabbitmq-server_${rabbitmq_version}-1_all.deb || \
-    curl -fLO https://github.com/rabbitmq/rabbitmq-server/releases/download/rabbitmq_v$(echo $rabbitmq_version | tr . _)/rabbitmq-server_${rabbitmq_version}-1_all.deb
+ARG rabbitmq_version=3.12.14
+RUN curl -fLO https://github.com/rabbitmq/rabbitmq-server/releases/download/v${rabbitmq_version}/rabbitmq-server_${rabbitmq_version}-1_all.deb
 COPY --from=builder /tmp/erlang/*.deb .
 RUN apt-get install -y ./*.deb
 RUN erl -noshell -eval 'io:format("~p", [ssl:versions()]), init:stop().'
