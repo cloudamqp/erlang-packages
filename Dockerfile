@@ -7,7 +7,7 @@ RUN apt-get install -y curl build-essential pkg-config ruby binutils autoconf \
                        libssl-dev libtinfo-dev zlib1g-dev libsnmp-dev && \
     gem install --no-document fpm
 
-ARG erlang_version=24.2
+ARG erlang_version=25.3
 WORKDIR /tmp/erlang
 RUN curl -fL https://api.github.com/repos/erlang/otp/tarball/refs/tags/OTP-${erlang_version} | tar zx --strip-components=1
 
@@ -18,14 +18,10 @@ ARG CPPFLAGS="-Wdate-time -D_FORTIFY_SOURCE=2"
 ARG LDFLAGS="-Wl,-Bsymbolic-functions -Wl,-z,relro"
 ARG ERLC_USE_SERVER=false
 RUN ./otp_build autoconf
-# Erlang's JIT before 25.3 generates code that segfaults on resolute's newer
-# kernel/glibc; fall back to the interpreter there. Other distros and 25.3+
-# keep the JIT.
 # gcc 14+ rejects the implicit int and implicit declarations that older OTP
 # configure tests use (e.g. "working poll()"), so those tests fail silently.
 # -fpermissive restores gcc 13 behaviour; older gcc errors on it under -Werror.
-RUN disable_jit=$(grep -q resolute /etc/os-release && dpkg --compare-versions "$erlang_version" lt 25.3 && echo --disable-jit); \
-    permissive=$([ "$(gcc -dumpversion | cut -d. -f1)" -ge 14 ] && \
+RUN permissive=$([ "$(gcc -dumpversion | cut -d. -f1)" -ge 14 ] && \
                  { dpkg --compare-versions "$erlang_version" lt 26.2.5.7 || \
                    { dpkg --compare-versions "$erlang_version" ge 27 && \
                      dpkg --compare-versions "$erlang_version" lt 27.2.1; }; } && \
@@ -37,7 +33,6 @@ RUN disable_jit=$(grep -q resolute /etc/os-release && dpkg --compare-versions "$
                 --enable-shared-zlib \
                 --disable-builtin-zlib \
                 --disable-sctp \
-                $disable_jit \
                 --without-java \
                 --without-odbc \
                 --without-megaco \
