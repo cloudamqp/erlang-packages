@@ -86,7 +86,11 @@ RUN curl -fLO https://github.com/rabbitmq/rabbitmq-server/releases/download/v${r
 COPY --from=builder /tmp/erlang/*.deb .
 RUN apt-get install -y ./*.deb
 RUN erl -noshell -eval 'io:format("~p", [ssl:versions()]), init:stop().'
-RUN rabbitmq-server
+# rabbitmq-server runs in the foreground; start it detached, wait for boot, stop.
+# await_startup fails at once until the node has registered, so retry it
+RUN rabbitmq-server -detached && \
+    timeout 120 sh -c 'until rabbitmqctl -q await_startup; do sleep 1; done' && \
+    rabbitmqctl stop
 
 FROM scratch
 COPY --from=builder /tmp/erlang/*.deb .
