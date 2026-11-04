@@ -49,7 +49,6 @@ RUN permissive=$([ "$(gcc -dumpversion | cut -d. -f1)" -ge 14 ] && \
     make install DESTDIR=/tmp/install && \
     find /tmp/install -type d -name examples | xargs rm -r && \
     find /tmp/install -type f -executable -exec strip {} \;;
-# when cross compiling the target version of strip is required
 
 # RabbitMQ reads max_fds from the fallback poller; select() caps it at 1024
 RUN ./bin/erl -noshell -eval 'poll = proplists:get_value(primary, hd(erlang:system_info(check_io))), init:stop().'
@@ -77,8 +76,7 @@ RUN mkdir debian && touch debian/control; \
 #RUN dpkg --info *erlang*.deb
 #RUN lintian *erlang*.deb || true
 
-ARG TARGETPLATFORM
-FROM --platform=$TARGETPLATFORM ${image} AS tester
+FROM ${image} AS tester
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y curl
 ARG rabbitmq_version=3.12.14
@@ -86,7 +84,11 @@ RUN curl -fLO https://github.com/rabbitmq/rabbitmq-server/releases/download/v${r
 COPY --from=builder /tmp/erlang/*.deb .
 RUN apt-get install -y ./*.deb
 RUN erl -noshell -eval 'io:format("~p", [ssl:versions()]), init:stop().'
-RUN rabbitmq-server
+# rabbitmq-server runs in the foreground; start it detached, wait for boot, stop.
+# await_startup exits non-zero right away until the node has registered, so retry it
+RUN rabbitmq-server -detached && \
+    timeout 120 sh -c 'until rabbitmqctl -q await_startup; do sleep 1; done' && \
+    rabbitmqctl stop
 
 FROM scratch
 COPY --from=builder /tmp/erlang/*.deb .
