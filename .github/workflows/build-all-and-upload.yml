@@ -18,6 +18,7 @@ jobs:
       matrix:
         image: [ubuntu:resolute, ubuntu:noble, ubuntu:jammy, debian:bookworm]
         runner: [ubuntu-26.04, ubuntu-26.04-arm]
+        erlang_version: ['25.3', '29.1.2']
     runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
@@ -28,9 +29,11 @@ jobs:
         with:
           context: .
           target: tester
-          build-args: image=${{ matrix.image }}
-          cache-from: type=gha,scope=tester-${{ matrix.image }}-${{ matrix.runner }}
-          cache-to: type=gha,mode=max,scope=tester-${{ matrix.image }}-${{ matrix.runner }}
+          build-args: |
+            image=${{ matrix.image }}
+            erlang_version=${{ matrix.erlang_version }}
+          cache-from: type=gha,scope=tester-${{ matrix.image }}-${{ matrix.runner }}-${{ matrix.erlang_version }}
+          cache-to: type=gha,mode=max,scope=tester-${{ matrix.image }}-${{ matrix.runner }}-${{ matrix.erlang_version }}
 
   missing-versions:
     runs-on: ubuntu-latest

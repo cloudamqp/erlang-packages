@@ -1,4 +1,5 @@
 ARG image=ubuntu:jammy
+ARG erlang_version=25.3
 FROM ${image} AS builder
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update
@@ -7,7 +8,7 @@ RUN apt-get install -y curl build-essential pkg-config ruby binutils autoconf \
                        libssl-dev libtinfo-dev zlib1g-dev libsnmp-dev && \
     gem install --no-document fpm
 
-ARG erlang_version=25.3
+ARG erlang_version
 WORKDIR /tmp/erlang
 RUN curl -fL https://api.github.com/repos/erlang/otp/tarball/refs/tags/OTP-${erlang_version} | tar zx --strip-components=1
 
@@ -79,8 +80,15 @@ RUN mkdir debian && touch debian/control; \
 FROM ${image} AS tester
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y curl
-ARG rabbitmq_version=3.12.14
-RUN curl -fLO https://github.com/rabbitmq/rabbitmq-server/releases/download/v${rabbitmq_version}/rabbitmq-server_${rabbitmq_version}-1_all.deb
+ARG erlang_version
+ARG rabbitmq_version
+RUN if [ -z "$rabbitmq_version" ]; then \
+      if dpkg --compare-versions "$erlang_version" lt 27; then rabbitmq_version=3.12.14; \
+      elif dpkg --compare-versions "$erlang_version" lt 30; then rabbitmq_version=4.3.7; \
+      else echo "No known RabbitMQ version accepts Erlang $erlang_version, add one here" >&2; exit 1; \
+      fi; \
+    fi && \
+    curl -fLO --retry 3 https://github.com/rabbitmq/rabbitmq-server/releases/download/v${rabbitmq_version}/rabbitmq-server_${rabbitmq_version}-1_all.deb
 COPY --from=builder /tmp/erlang/*.deb .
 RUN apt-get install -y ./*.deb
 RUN erl -noshell -eval 'io:format("~p", [ssl:versions()]), init:stop().'
@@ -88,7 +96,11 @@ RUN erl -noshell -eval 'io:format("~p", [ssl:versions()]), init:stop().'
 # await_startup exits non-zero right away until the node has registered, so retry it
 RUN rabbitmq-server -detached && \
     timeout 120 sh -c 'until rabbitmqctl -q await_startup; do sleep 1; done' && \
-    rabbitmqctl stop
+    rabbitmqctl stop && \
+    mkdir /tested
 
+# Copying the (empty) /tested directory makes the final image depend on the
+# tester stage. If a test fails the build fails, and no package is output.
 FROM scratch
 COPY --from=builder /tmp/erlang/*.deb .
+COPY --from=tester /tested/ .
