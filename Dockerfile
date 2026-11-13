@@ -96,7 +96,11 @@ RUN erl -noshell -eval 'io:format("~p", [ssl:versions()]), init:stop().'
 # await_startup exits non-zero right away until the node has registered, so retry it
 RUN rabbitmq-server -detached && \
     timeout 120 sh -c 'until rabbitmqctl -q await_startup; do sleep 1; done' && \
-    rabbitmqctl stop
+    rabbitmqctl stop && \
+    mkdir /tested
 
+# Copying the (empty) /tested directory makes the final image depend on the
+# tester stage. If a test fails the build fails, and no package is output.
 FROM scratch
 COPY --from=builder /tmp/erlang/*.deb .
+COPY --from=tester /tested/ .
